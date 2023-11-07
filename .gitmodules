@@ -1,0 +1,3 @@
+[submodule "nsd_dataset/nsd_gnet8x"]
+	path = nsd_dataset/nsd_gnet8x
+	url = https://github.com/styvesg/nsd_gnet8x
