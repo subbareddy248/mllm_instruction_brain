@@ -117,7 +117,7 @@ def embed_dict(fd):
 
 ### NIFTY STUFF ###
 def load_mask_from_nii(mask_nii_file):
-    return nib.load(mask_nii_file).get_data()
+    return nib.load(mask_nii_file).get_fdata()
     
 def view_data(vol_shape, idx_mask, data_vol, order='C', save_to=None):
     view_vol = np.ones(np.prod(vol_shape), dtype=np.float32) * np.nan
