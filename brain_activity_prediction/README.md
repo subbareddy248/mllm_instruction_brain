@@ -26,7 +26,8 @@ these embeddings and output the corresponding brain activity (fMRI).
 | `VideoCoCa`                | No implementaion public [ [Paper](https://arxiv.org/pdf/2212.04979.pdf) ]                                                                                                                                                                    |
 | `ViT`                      | [ [HuggingFace](https://huggingface.co/docs/transformers/model_doc/vit) ]                                                                                                                                                                    |
 | `OWL-ViT`                  | [ [HuggingFace](https://huggingface.co/docs/transformers/model_doc/owlvit) ]                                                                                                                                                                 |
-| `DINO-V2`                  | [Meta](https://dinov2.metademolab.com/)                                                                                                                                                                                                      |
+| `DINO-V2`                  | [ [Meta](https://dinov2.metademolab.com/) ]                                                                                                                                                                                                  |
+| `Video-LLaMA-Series`       | [ [HuggingFace](https://huggingface.co/DAMO-NLP-SG/Video-LLaMA-Series) ]                                                                                                                                                                     |
 
 ## TODO
 
