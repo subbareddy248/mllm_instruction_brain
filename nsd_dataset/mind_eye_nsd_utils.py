@@ -22,6 +22,18 @@ def get_trial_image_orders(base_directory: str):
     return subject_idx[:, trial_order] - 1
 
 
+def get_subject_image_ids(base_directory: str, subject: int):
+    exp_design = load_exp_design_file(base_directory)
+    return exp_design["subjectim"][subject - 1]
+
+
+def get_subject_images(base_directory: str, subject: int):
+    images = load_image_dataset(base_directory)
+    subject_image_ids = get_subject_image_ids(base_directory, subject)
+
+    return subject_image_ids, images[subject_image_ids]
+
+
 def get_split_data(base_directory: str, subject: int, sessions: list[int] = range(1, 41)):
     maskdata = load_mask_from_nii(path.join(base_directory, "nsddata_voxels", f"subj{subject:02}", "nsdgeneral.nii.gz"))
     voxels = np.where(maskdata == 1)
