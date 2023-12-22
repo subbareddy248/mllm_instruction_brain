@@ -31,7 +31,7 @@ def get_subject_images(base_directory: str, subject: int):
     images = load_image_dataset(base_directory)
     subject_image_ids = get_subject_image_ids(base_directory, subject)
 
-    return subject_image_ids, images[subject_image_ids]
+    return subject_image_ids, images[subject_image_ids-1]
 
 
 def get_split_data(base_directory: str, subject: int, sessions: list[int] = range(1, 41)):
