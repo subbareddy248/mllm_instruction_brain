@@ -1,7 +1,7 @@
 from os import path
 
-from nsd_gnet8x.src.file_utility import load_mask_from_nii
-from nsd_gnet8x.src.load_nsd import ordering_split
+from nsd_dataset.nsd_gnet8x.src.file_utility import load_mask_from_nii
+from nsd_dataset.nsd_gnet8x.src.load_nsd import ordering_split
 
 import scipy.io as sio
 import numpy as np
@@ -54,7 +54,7 @@ def get_split_data(base_directory: str, subject: int, sessions: list[int] = rang
         else:
             combined_session_data = np.concatenate((combined_session_data, current_session_data), axis=0)
 
-    return ordering_split(combined_session_data, ordering, combine_trial=False)
+    return combined_session_data, ordering_split(combined_session_data, ordering, combine_trial=False)
 
 
 def load_image_dataset(base_directory: str):
