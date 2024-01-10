@@ -6,6 +6,7 @@ from nsd_dataset.nsd_gnet8x.src.load_nsd import ordering_split
 import scipy.io as sio
 import numpy as np
 import h5py
+from tqdm.auto import tqdm
 
 
 def load_exp_design_file(base_directory: str):
@@ -43,7 +44,7 @@ def get_split_data(base_directory: str, subject: int, sessions: list[int] = rang
 
     combined_session_data = None
 
-    for session in sessions:
+    for session in tqdm(sessions, ):
         maindata = load_mask_from_nii(
             path.join(base_directory, "nsddata_sessions", f"subj{subject:02}", f"betas_session{session:02}.nii.gz")
         ).transpose(3, 0, 1, 2)
