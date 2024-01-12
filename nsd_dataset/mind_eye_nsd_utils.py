@@ -14,10 +14,14 @@ def load_exp_design_file(base_directory: str):
     return sio.loadmat(exp_design_filepath)
 
 
-def get_trial_image_orders(base_directory: str):
+def get_trial_image_orders(base_directory: str, trial_order=None):
     exp_design = load_exp_design_file(base_directory)
 
-    trial_order = exp_design["masterordering"].flatten() - 1
+    if trial_order is None:
+        trial_order = exp_design["masterordering"].flatten() - 1
+    else:
+        trial_order = trial_order - 1
+
     subject_idx = exp_design["subjectim"]
 
     return subject_idx[:, trial_order] - 1
@@ -32,10 +36,15 @@ def get_subject_images(base_directory: str, subject: int):
     images = load_image_dataset(base_directory)
     subject_image_ids = get_subject_image_ids(base_directory, subject)
 
-    return subject_image_ids, images[subject_image_ids-1]
+    return subject_image_ids, images[subject_image_ids - 1]
 
 
-def get_split_data(base_directory: str, subject: int, sessions: list[int] = range(1, 41)):
+def get_split_data(
+    base_directory: str,
+    subject: int,
+    sessions: list[int] = range(1, 41),
+    average_out_fmri: bool = False,
+):
     maskdata = load_mask_from_nii(path.join(base_directory, "nsddata_voxels", f"subj{subject:02}", "nsdgeneral.nii.gz"))
     voxels = np.where(maskdata == 1)
 
@@ -44,7 +53,7 @@ def get_split_data(base_directory: str, subject: int, sessions: list[int] = rang
 
     combined_session_data = None
 
-    for session in tqdm(sessions, ):
+    for session in tqdm(sessions):
         maindata = load_mask_from_nii(
             path.join(base_directory, "nsddata_sessions", f"subj{subject:02}", f"betas_session{session:02}.nii.gz")
         ).transpose(3, 0, 1, 2)
@@ -55,7 +64,34 @@ def get_split_data(base_directory: str, subject: int, sessions: list[int] = rang
         else:
             combined_session_data = np.concatenate((combined_session_data, current_session_data), axis=0)
 
-    return combined_session_data, ordering_split(combined_session_data, ordering, combine_trial=False)
+    if average_out_fmri:
+        ordering_done = [False] * 1000
+        new_ordering = []
+        order_to_fmri = {}
+        for indx, ord in enumerate(ordering[0]):
+            if not ordering_done[ord]:
+                new_ordering.append(ord)
+                ordering_done[ord] = True
+                order_to_fmri[ord] = [np.copy(combined_session_data[indx])]
+            else:
+                order_to_fmri[ord].append(np.copy(combined_session_data[indx]))
+
+        combined_session_data = []
+        for ord in new_ordering:
+            combined_session_data.append(np.array(order_to_fmri[ord]).mean(axis=0))
+
+        combined_session_data = np.array(combined_session_data)
+        ordering = np.array([new_ordering])
+
+    return (
+        ordering + 1,
+        combined_session_data,
+        ordering_split(
+            np.copy(combined_session_data),
+            ordering,
+            combine_trial=False,
+        ),
+    )
 
 
 def load_image_dataset(base_directory: str):
