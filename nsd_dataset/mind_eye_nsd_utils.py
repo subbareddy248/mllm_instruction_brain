@@ -64,11 +64,14 @@ def get_split_data(
         else:
             combined_session_data = np.concatenate((combined_session_data, current_session_data), axis=0)
 
+    # with open(path.join(base_directory, "nsddata_sessions", f"subj{subject:02}", "combined_sessions.npy"), "rb") as f:
+    #     combined_session_data = np.load(f)
+
     if average_out_fmri:
-        ordering_done = [False] * 1000
+        ordering_done = [False] * (ordering.max()+1)
         new_ordering = []
         order_to_fmri = {}
-        for indx, ord in enumerate(ordering[0]):
+        for indx, ord in enumerate(ordering):
             if not ordering_done[ord]:
                 new_ordering.append(ord)
                 ordering_done[ord] = True
@@ -81,7 +84,7 @@ def get_split_data(
             combined_session_data.append(np.array(order_to_fmri[ord]).mean(axis=0))
 
         combined_session_data = np.array(combined_session_data)
-        ordering = np.array([new_ordering])
+        ordering = np.array(new_ordering)
 
     return (
         ordering + 1,
