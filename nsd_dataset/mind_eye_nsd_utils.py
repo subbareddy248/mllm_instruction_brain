@@ -39,17 +39,13 @@ def get_subject_images(base_directory: str, subject: int):
     return subject_image_ids, images[subject_image_ids - 1]
 
 
-def get_split_data(
+def combine_fmri_session_data(
     base_directory: str,
     subject: int,
     sessions: list[int] = range(1, 41),
-    average_out_fmri: bool = False,
 ):
     maskdata = load_mask_from_nii(path.join(base_directory, "nsddata_voxels", f"subj{subject:02}", "nsdgeneral.nii.gz"))
     voxels = np.where(maskdata == 1)
-
-    exp_design = load_exp_design_file(base_directory)
-    ordering = exp_design["masterordering"].flatten() - 1
 
     combined_session_data = None
 
@@ -64,11 +60,23 @@ def get_split_data(
         else:
             combined_session_data = np.concatenate((combined_session_data, current_session_data), axis=0)
 
-    # with open(path.join(base_directory, "nsddata_sessions", f"subj{subject:02}", "combined_sessions.npy"), "rb") as f:
-    #     combined_session_data = np.load(f)
+    return combined_session_data
+
+
+def get_split_data(
+    base_directory: str,
+    subject: int,
+    sessions: list[int] = range(1, 41),
+    average_out_fmri: bool = False,
+):
+    exp_design = load_exp_design_file(base_directory)
+    ordering = exp_design["masterordering"].flatten() - 1
+
+    with open(path.join(base_directory, "nsddata_sessions", f"subj{subject:02}", "combined_sessions.npy"), "rb") as f:
+        combined_session_data = np.load(f)
 
     if average_out_fmri:
-        ordering_done = [False] * (ordering.max()+1)
+        ordering_done = [False] * (ordering.max() + 1)
         new_ordering = []
         order_to_fmri = {}
         for indx, ord in enumerate(ordering):
