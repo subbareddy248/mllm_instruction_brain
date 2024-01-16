@@ -3,8 +3,6 @@ from collections import OrderedDict
 import pathlib
 import pickle
 
-
-from accelerate import init_empty_weights, load_checkpoint_and_dispatch
 from datasets import Dataset
 import torch
 import transformers
@@ -12,10 +10,10 @@ from tqdm.auto import tqdm
 
 import nsd_dataset.mind_eye_nsd_utils as menutils
 
-MODEL_ID = "Salesforce/instructblip-vicuna-7b"
-CONFIG_CLASS = transformers.InstructBlipConfig
-MODEL_CLASS = transformers.InstructBlipForConditionalGeneration
-PROCESSOR_CLASS = transformers.InstructBlipProcessor
+MODEL_ID = "llava-hf/llava-1.5-13b-hf"
+CONFIG_CLASS = transformers.LlavaConfig
+MODEL_CLASS = transformers.LlavaForConditionalGeneration
+PROCESSOR_CLASS = transformers.LlavaProcessor
 
 MODEL_NAME = MODEL_ID.replace("/", "_").replace(" ", "_")
 
@@ -46,18 +44,17 @@ def main():
 
     model_config = CONFIG_CLASS.from_pretrained(MODEL_ID)
     model_config.output_hidden_states = True
-    model_config.vision_config.output_hidden_states = True
-    model_config.qformer_config.output_hidden_states = True
 
-    if TO_CACHE:
-        model = MODEL_CLASS.from_pretrained(MODEL_ID, config=model_config, cache_dir=HUGGINGFACE_CACHE_DIR)
-        model.save_pretrained(MODEL_CHECKPOINTS_DIR)
-        del model
-
-    with init_empty_weights():
-        model = MODEL_CLASS(model_config)
-
-    model = load_checkpoint_and_dispatch(model, checkpoint=MODEL_CHECKPOINTS_DIR, device_map="auto")
+    model = MODEL_CLASS.from_pretrained(
+        MODEL_ID,
+        config=model_config,
+        cache_dir=HUGGINGFACE_CACHE_DIR,
+        device_map="auto",
+        max_memory={
+            0: "7GB",
+        },
+        low_cpu_mem_usage=True,
+    )
 
     image_ids, images = menutils.get_subject_images(BASE_DIR, SUBJECT)
 
@@ -88,17 +85,12 @@ def main():
                 print("outputs =", outputs)
                 exit(0)
 
-            vision_outputs = outputs["vision_outputs"]
-            qformer_outputs = outputs["qformer_outputs"]
-
-            vision_hidden_states = tuple(torch.mean(hs, dim=1).numpy() for hs in vision_outputs["hidden_states"])
-            qformer_hidden_states = tuple(torch.mean(hs, dim=1).numpy() for hs in qformer_outputs["hidden_states"])
+            hidden_states = tuple(torch.mean(hs, dim=1).numpy() for hs in outputs["hidden_states"])
 
             BUFFER.append(
                 {
                     "image_ids": batch["id"],
-                    "vision_hidden_states": vision_hidden_states,
-                    "qformer_hidden_states": qformer_hidden_states,
+                    "hidden_states": hidden_states,
                 }
             )
 
@@ -169,7 +161,7 @@ if __name__ == "__main__":
         "-p",
         "--prompt",
         required=False,
-        default="Describe the image",
+        default="USER: <image>\nWhat's the content of the image?\nASSISTANT:",
         type=str,
         help="The prompt that will be passed into the model along with the images",
     )
@@ -179,7 +171,6 @@ if __name__ == "__main__":
     BATCH_SIZE: int = args.batch_size
     BASE_DIR: pathlib.Path = args.base_dir
     SUBJECT: int = args.subject
-    TO_CACHE: bool = args.cache_first
     TEST_RUN: bool = args.test_run
     PROMPT: str = args.prompt
 
