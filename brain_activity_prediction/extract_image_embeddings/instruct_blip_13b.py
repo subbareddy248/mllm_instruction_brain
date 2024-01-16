@@ -11,7 +11,7 @@ from tqdm.auto import tqdm
 
 import nsd_dataset.mind_eye_nsd_utils as menutils
 
-MODEL_ID = "Salesforce/instructblip-vicuna-7b"
+MODEL_ID = "Salesforce/instructblip-vicuna-13b"
 CONFIG_CLASS = transformers.InstructBlipConfig
 MODEL_CLASS = transformers.InstructBlipForConditionalGeneration
 PROCESSOR_CLASS = transformers.InstructBlipProcessor
