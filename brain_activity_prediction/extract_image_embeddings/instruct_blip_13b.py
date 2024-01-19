@@ -54,9 +54,10 @@ def main():
         cache_dir=HUGGINGFACE_CACHE_DIR,
         device_map="auto",
         max_memory={
-            0: "7GB",
+            GPU_ID: "7GB",
         },
         low_cpu_mem_usage=True,
+        offload_folder=HUGGINGFACE_CACHE_DIR.joinpath("offload", MODEL_NAME),
     )
 
     image_ids, images = menutils.get_subject_images(BASE_DIR, SUBJECT)
@@ -164,15 +165,23 @@ if __name__ == "__main__":
         type=str,
         help="The prompt that will be passed into the model along with the images",
     )
+    parser.add_argument(
+        "-g",
+        "--gpu-id",
+        required=False,
+        default=0,
+        type=int,
+        help="The CUDA GPU id on which to run inference",
+    )
 
     args = parser.parse_args()
 
     BATCH_SIZE: int = args.batch_size
     BASE_DIR: pathlib.Path = args.base_dir
     SUBJECT: int = args.subject
-    TO_CACHE: bool = args.cache_first
     TEST_RUN: bool = args.test_run
     PROMPT: str = args.prompt
+    GPU_ID: int = args.gpu_id
 
     HUGGINGFACE_CACHE_DIR = BASE_DIR.joinpath(".huggingface_cache")
     OUTPUT_DIR = BASE_DIR.joinpath("image_embeddings", MODEL_NAME, f"subject_0{SUBJECT}")

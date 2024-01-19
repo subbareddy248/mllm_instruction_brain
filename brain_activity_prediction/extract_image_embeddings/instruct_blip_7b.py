@@ -57,6 +57,7 @@ def main():
             0: "7GB",
         },
         low_cpu_mem_usage=True,
+        offload_folder=HUGGINGFACE_CACHE_DIR.joinpath("offload", MODEL_NAME),
     )
 
     image_ids, images = menutils.get_subject_images(BASE_DIR, SUBJECT)
@@ -170,7 +171,6 @@ if __name__ == "__main__":
     BATCH_SIZE: int = args.batch_size
     BASE_DIR: pathlib.Path = args.base_dir
     SUBJECT: int = args.subject
-    TO_CACHE: bool = args.cache_first
     TEST_RUN: bool = args.test_run
     PROMPT: str = args.prompt
 
