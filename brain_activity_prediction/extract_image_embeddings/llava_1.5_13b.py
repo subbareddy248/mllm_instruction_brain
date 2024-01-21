@@ -56,13 +56,13 @@ def main():
         offload_folder=HUGGINGFACE_CACHE_DIR.joinpath("offload", MODEL_NAME),
     )
 
-    image_ids, images = menutils.get_subject_images(BASE_DIR, SUBJECT)
-
     def data_generator():
+        image_ids, images = menutils.get_subject_images(BASE_DIR, SUBJECT)
+
         for image_id, image in zip(image_ids, images):
             yield {"id": image_id, "image": image}
 
-    dataset = Dataset.from_generator(data_generator)
+    dataset = Dataset.from_generator(data_generator, cache_dir=HUGGINGFACE_CACHE_DIR.joinpath("datasets"))
 
     batches = batchify(dataset, n=BATCH_SIZE)
     total_batches = len(dataset) // BATCH_SIZE
