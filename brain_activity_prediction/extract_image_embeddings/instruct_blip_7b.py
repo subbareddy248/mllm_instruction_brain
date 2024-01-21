@@ -7,7 +7,6 @@ import pickle
 from datasets import Dataset
 import torch
 import transformers
-from tqdm.auto import tqdm
 
 import nsd_dataset.mind_eye_nsd_utils as menutils
 
@@ -77,7 +76,25 @@ def main():
     BUFFER = []
 
     with torch.inference_mode():
-        for batch_num, batch in tqdm(enumerate(batches), total=total_batches):
+
+        batch_iter = enumerate(batches)
+        if TO_USE_TELEGRAM:
+            batch_iter = tqdm(
+                batch_iter,
+                desc=f"[InstructBlip7b] Subject 0{SUBJECT}",
+                mininterval=10,
+                maxinterval=20,
+                total=total_batches,
+                token=TELEGRAM_BOT_TOKEN,
+                chat_id=TELEGRAM_CHAT_ID,
+            )
+        else:
+            batch_iter = tqdm(
+                batch_iter,
+                total=total_batches,
+            )
+
+        for batch_num, batch in batch_iter:
             images = torch.tensor(batch["image"])
             text = [PROMPT] * BATCH_SIZE
 
@@ -174,6 +191,20 @@ if __name__ == "__main__":
         type=int,
         help="The CUDA GPU id on which to run inference",
     )
+    parser.add_argument(
+        "--telegram-bot-token",
+        required=False,
+        default="",
+        type=str,
+        help="Telegram Bot token to use for tqdm",
+    )
+    parser.add_argument(
+        "--telegram-chat-id",
+        required=False,
+        default=0,
+        type=int,
+        help="Telegram Chat ID to send tqdm updates to",
+    )
 
     args = parser.parse_args()
 
@@ -183,6 +214,14 @@ if __name__ == "__main__":
     TEST_RUN: bool = args.test_run
     PROMPT: str = args.prompt
     GPU_ID: int = args.gpu_id
+    TELEGRAM_BOT_TOKEN: str = args.telegram_bot_token
+    TELEGRAM_CHAT_ID: int = args.telegram_chat_id
+    TO_USE_TELEGRAM: bool = TELEGRAM_BOT_TOKEN != "" and TELEGRAM_CHAT_ID != 0
+
+    if TO_USE_TELEGRAM:
+        from tqdm.contrib.telegram import tqdm
+    else:
+        from tqdm.auto import tqdm
 
     HUGGINGFACE_CACHE_DIR = BASE_DIR.joinpath(".huggingface_cache")
     OUTPUT_DIR = BASE_DIR.joinpath("image_embeddings", MODEL_NAME, f"subject_0{SUBJECT}")
