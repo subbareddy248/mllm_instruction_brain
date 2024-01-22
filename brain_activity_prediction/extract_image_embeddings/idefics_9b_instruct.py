@@ -105,16 +105,13 @@ def main():
                 exit(0)
 
             hidden_states = outputs["hidden_states"]
-            image_hidden_states = outputs["image_hidden_states"]
 
             hidden_states = tuple(torch.mean(hs, dim=1).numpy() for hs in hidden_states)
-            image_hidden_states = tuple(torch.mean(hs, dim=1).numpy() for hs in image_hidden_states)
 
             BUFFER.append(
                 {
                     "image_ids": batch["id"],
                     "hidden_states": hidden_states,
-                    "image_hidden_states": image_hidden_states,
                 }
             )
 
