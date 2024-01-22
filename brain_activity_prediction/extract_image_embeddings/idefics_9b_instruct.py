@@ -74,12 +74,6 @@ def main():
     BUFFER = []
 
     with torch.inference_mode():
-        exit_condition = processor.tokenizer("<end_of_utterance>", add_special_tokens=False).input_ids
-        bad_words_ids = processor.tokenizer(
-            ["<image>", "<fake_token_around_image>"],
-            add_special_tokens=False,
-        ).input_ids
-
         batch_iter = enumerate(batches)
         if TO_USE_TELEGRAM:
             batch_iter = tqdm(
@@ -103,13 +97,7 @@ def main():
 
             inputs = processor(prompts, return_tensors="pt").to(f"cuda:{GPU_ID}")
 
-            outputs = model.generate(
-                **inputs,
-                eos_token_id=exit_condition,
-                bad_words_ids=bad_words_ids,
-                max_length=100,
-                output_hidden_states=True,
-            )
+            outputs = model(**inputs, output_hidden_states=True)
             outputs = to_cpu(outputs)
 
             if TEST_RUN:
