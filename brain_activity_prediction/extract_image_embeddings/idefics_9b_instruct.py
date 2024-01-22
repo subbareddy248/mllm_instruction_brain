@@ -104,17 +104,17 @@ def main():
                 print("outputs =", outputs)
                 exit(0)
 
-            vision_outputs = outputs["vision_outputs"]
-            qformer_outputs = outputs["qformer_outputs"]
+            hidden_states = outputs["hidden_states"]
+            image_hidden_states = outputs["image_hidden_states"]
 
-            vision_hidden_states = tuple(torch.mean(hs, dim=1).numpy() for hs in vision_outputs["hidden_states"])
-            qformer_hidden_states = tuple(torch.mean(hs, dim=1).numpy() for hs in qformer_outputs["hidden_states"])
+            hidden_states = tuple(torch.mean(hs, dim=1).numpy() for hs in hidden_states)
+            image_hidden_states = tuple(torch.mean(hs, dim=1).numpy() for hs in image_hidden_states)
 
             BUFFER.append(
                 {
                     "image_ids": batch["id"],
-                    "vision_hidden_states": vision_hidden_states,
-                    "qformer_hidden_states": qformer_hidden_states,
+                    "hidden_states": hidden_states,
+                    "image_hidden_states": image_hidden_states,
                 }
             )
 
