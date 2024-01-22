@@ -104,7 +104,7 @@ def main():
             images = [Image.fromarray(np.array(image).astype("uint8"), "RGB") for image in batch["image"]]
             prompts = [[image, PROMPT] for image in images]
 
-            inputs = processor(prompts, return_tensors="pt")
+            inputs = processor(prompts, return_tensors="pt").to(f"cuda:{GPU_ID}")
 
             outputs = model.generate(
                 **inputs,
