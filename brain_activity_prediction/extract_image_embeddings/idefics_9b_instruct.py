@@ -45,9 +45,6 @@ def main():
     processor = PROCESSOR_CLASS.from_pretrained(MODEL_ID, cache_dir=HUGGINGFACE_CACHE_DIR)
 
     model_config = CONFIG_CLASS.from_pretrained(MODEL_ID)
-    model_config.output_hidden_states = True
-    model_config.vision_config.output_hidden_states = True
-    model_config.perceiver_config.output_hidden_states = True
 
     model = MODEL_CLASS.from_pretrained(
         MODEL_ID,
@@ -111,6 +108,7 @@ def main():
                 eos_token_id=exit_condition,
                 bad_words_ids=bad_words_ids,
                 max_length=100,
+                output_hidden_states=True,
             )
             outputs = to_cpu(outputs)
 
