@@ -1,5 +1,6 @@
 import argparse
 from collections import OrderedDict
+import numpy as np
 import pathlib
 import pickle
 from PIL import Image
@@ -100,7 +101,7 @@ def main():
             )
 
         for batch_num, batch in batch_iter:
-            images = [Image.fromarray(image, "RGB") for image in batch["image"]]
+            images = [Image.fromarray(np.array(image).astype("uint8"), "RGB") for image in batch["image"]]
             prompts = [[image, PROMPT] for image in images]
 
             inputs = processor(prompts, return_tensors="pt")
