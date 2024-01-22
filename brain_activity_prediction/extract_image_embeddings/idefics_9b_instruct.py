@@ -1,7 +1,9 @@
 import argparse
 from collections import OrderedDict
+import numpy as np
 import pathlib
 import pickle
+from PIL import Image
 
 
 from datasets import Dataset
@@ -75,6 +77,11 @@ def main():
     BUFFER = []
 
     with torch.inference_mode():
+        exit_condition = processor.tokenizer("<end_of_utterance>", add_special_tokens=False).input_ids
+        bad_words_ids = processor.tokenizer(
+            ["<image>", "<fake_token_around_image>"],
+            add_special_tokens=False,
+        ).input_ids
 
         batch_iter = enumerate(batches)
         if TO_USE_TELEGRAM:
@@ -94,14 +101,17 @@ def main():
             )
 
         for batch_num, batch in batch_iter:
-            images = torch.tensor(batch["image"])
-            print(images.min(), images.max(), images.shape)
-            exit(0)
-            text = [PROMPT] * BATCH_SIZE
+            images = [Image.fromarray(np.array(image).astype("uint8"), "RGB") for image in batch["image"]]
+            prompts = [[image, PROMPT] for image in images]
 
-            inputs = processor(images=images, text=text, return_tensors="pt")
+            inputs = processor(prompts, return_tensors="pt")
 
-            outputs = model(**inputs)
+            outputs = model.generate(
+                **inputs,
+                eos_token_id=exit_condition,
+                bad_words_ids=bad_words_ids,
+                max_length=100,
+            )
             outputs = to_cpu(outputs)
 
             if TEST_RUN:
