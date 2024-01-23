@@ -113,6 +113,7 @@ def load_image_dataset(base_directory: str):
 def load_roi_masks(base_directory: str, subject: int):
     roi_names = set(
         [
+            "nsdgeneral",
             "corticalsulc",
             "floc-bodies",
             "floc-faces",
