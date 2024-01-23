@@ -108,3 +108,26 @@ def get_split_data(
 def load_image_dataset(base_directory: str):
     dataset_filepath = path.join(base_directory, "nsddata_stimuli", "nsd_stimuli_227.hdf5")
     return np.array(h5py.File(dataset_filepath, "r")["imgBrick"])
+
+
+def load_roi_masks(base_directory: str, subject: int):
+    roi_names = set(
+        [
+            "corticalsulc",
+            "floc-bodies",
+            "floc-faces",
+            "floc-places",
+            "floc-words",
+            "HCP_MMP1",
+            "Kastner2015",
+            "MTL",
+            "prf-eccrois",
+            "prf-visualrois",
+            "streams",
+            "thalamus",
+        ]
+    )
+
+    roi_masks_dir = path.join(base_directory, "nsddata_roi", f"subj{subject:02}")
+
+    return {name: load_mask_from_nii(path.join(roi_masks_dir, f"{name}.nii.gz")) for name in roi_names}
