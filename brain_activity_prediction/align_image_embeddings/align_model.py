@@ -1,7 +1,6 @@
 import argparse
 from himalaya.backend import set_backend
 from himalaya.ridge import RidgeCV
-import json
 from nsd_dataset import mind_eye_nsd_utils as menutils
 import numpy
 import pathlib
@@ -164,10 +163,10 @@ def main():
         TRN_SCORES[hs_name] = trn_roi_scores
         VAL_SCORES[hs_name] = val_roi_scores
 
-    with open(OUTPUT_DIR.joinpath("training.json"), "w") as f:
-        json.dump(TRN_SCORES, f, indent="  ")
-    with open(OUTPUT_DIR.joinpath("validation.json"), "w") as f:
-        json.dump(VAL_SCORES, f, indent="  ")
+    with open(OUTPUT_DIR.joinpath("training.pkl"), "wb") as f:
+        pickle.dump(TRN_SCORES, f)
+    with open(OUTPUT_DIR.joinpath("validation.pkl"), "wb") as f:
+        pickle.dump(VAL_SCORES, f)
 
 
 if __name__ == "__main__":
