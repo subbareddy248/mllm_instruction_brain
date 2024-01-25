@@ -13,7 +13,7 @@ import nsd_dataset.mind_eye_nsd_utils as menutils
 MODEL_ID = "google/vit-huge-patch14-224-in21k"
 CONFIG_CLASS = transformers.ViTConfig
 MODEL_CLASS = transformers.ViTModel
-PROCESSOR_CLASS = transformers.ViTImageProcessor
+PROCESSOR_CLASS = transformers.ViTFeatureExtractor
 
 MODEL_NAME = MODEL_ID.replace("/", "_").replace(" ", "_")
 
@@ -93,9 +93,7 @@ def main():
 
         for batch_num, batch in batch_iter:
             images = torch.tensor(batch["image"])
-            text = [PROMPT] * BATCH_SIZE
-
-            inputs = processor(images=images, text=text, return_tensors="pt")
+            inputs = processor(images=images, return_tensors="pt")
 
             outputs = model(**inputs, output_hidden_states=True)
             outputs = to_cpu(outputs)
@@ -170,14 +168,6 @@ if __name__ == "__main__":
         help="Enable test-run to just output the outputs for the first batch and exit",
     )
     parser.add_argument(
-        "-p",
-        "--prompt",
-        required=False,
-        default="Describe the image.",
-        type=str,
-        help="The prompt that will be passed into the model along with the images",
-    )
-    parser.add_argument(
         "-g",
         "--gpu-id",
         required=False,
@@ -206,7 +196,6 @@ if __name__ == "__main__":
     BASE_DIR: pathlib.Path = args.base_dir
     SUBJECT: int = args.subject
     TEST_RUN: bool = args.test_run
-    PROMPT: str = args.prompt
     GPU_ID: int = args.gpu_id
     TELEGRAM_BOT_TOKEN: str = args.telegram_bot_token
     TELEGRAM_CHAT_ID: int = args.telegram_chat_id
