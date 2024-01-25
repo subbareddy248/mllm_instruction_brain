@@ -13,7 +13,7 @@ import nsd_dataset.mind_eye_nsd_utils as menutils
 MODEL_ID = "google/vit-huge-patch14-224-in21k"
 CONFIG_CLASS = transformers.ViTConfig
 MODEL_CLASS = transformers.ViTModel
-PROCESSOR_CLASS = transformers.ViTFeatureExtractor
+PROCESSOR_CLASS = transformers.ViTImageProcessor
 
 MODEL_NAME = MODEL_ID.replace("/", "_").replace(" ", "_")
 
