@@ -40,6 +40,8 @@ def batchify(iterable, n=1):
 
 
 def main():
+    device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
+
     processor = PROCESSOR_CLASS.from_pretrained(MODEL_ID, cache_dir=HUGGINGFACE_CACHE_DIR)
 
     model_config = CONFIG_CLASS.from_pretrained(MODEL_ID)
@@ -49,13 +51,8 @@ def main():
         MODEL_ID,
         config=model_config,
         cache_dir=HUGGINGFACE_CACHE_DIR,
-        device_map="auto",
-        max_memory={
-            GPU_ID: "7GB",
-        },
-        low_cpu_mem_usage=True,
         offload_folder=HUGGINGFACE_CACHE_DIR.joinpath("offload", MODEL_NAME),
-    )
+    ).to(device)
 
     def data_generator():
         image_ids, images = menutils.get_subject_images(BASE_DIR, SUBJECT)
@@ -94,6 +91,9 @@ def main():
         for batch_num, batch in batch_iter:
             images = torch.tensor(batch["image"])
             inputs = processor(images=images, return_tensors="pt")
+
+            for k, v in inputs.items():
+                inputs[k] = v.to(device)
 
             outputs = model(**inputs, output_hidden_states=True)
             outputs = to_cpu(outputs)
