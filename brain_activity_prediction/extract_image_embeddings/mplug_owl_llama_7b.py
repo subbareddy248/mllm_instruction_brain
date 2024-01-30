@@ -61,7 +61,9 @@ def main():
 
     device_map = accelerate.infer_auto_device_map(
         _model_from_conf,
-        max_memory={ gpu_id: "7GB" for gpu_id in GPU_IDS },
+        max_memory = {
+            GPU_ID: "7GB",
+        },
     )
 
     model = MODEL_CLASS.from_pretrained(
@@ -235,7 +237,6 @@ if __name__ == "__main__":
         "-g",
         "--gpu-id",
         required=True,
-        nargs="+",
         type=int,
         help="The CUDA GPU id on which to run inference",
     )
@@ -261,7 +262,7 @@ if __name__ == "__main__":
     SUBJECT: int = args.subject
     TEST_RUN: bool = args.test_run
     PROMPT: str = args.prompt
-    GPU_IDS: int = args.gpu_id
+    GPU_ID: int = args.gpu_id
     TELEGRAM_BOT_TOKEN: str = args.telegram_bot_token
     TELEGRAM_CHAT_ID: int = args.telegram_chat_id
     TO_USE_TELEGRAM: bool = TELEGRAM_BOT_TOKEN != "" and TELEGRAM_CHAT_ID != 0

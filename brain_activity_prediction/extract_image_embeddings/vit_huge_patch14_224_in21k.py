@@ -184,7 +184,6 @@ if __name__ == "__main__":
         "-g",
         "--gpu-id",
         required=True,
-        nargs="+",
         type=int,
         help="The CUDA GPU id on which to run inference",
     )
