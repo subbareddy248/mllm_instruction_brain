@@ -1,5 +1,6 @@
 import argparse
 from collections import OrderedDict
+import glob
 import pathlib
 import pickle
 
@@ -88,7 +89,19 @@ def main():
                 total=total_batches,
             )
 
+        done_ids = []
+        batch_files = glob.glob(pathlib.Path(OUTPUT_DIR).joinpath("batch_*.pkl"))
+        for batch_file in batch_files:
+            with open(batch_file, "rb") as f:
+                batches = pickle.load(f)
+            for batch in batches:
+                done_ids.extend(batch["image_ids"])
+        done_ids = set(done_ids)
+
         for batch_num, batch in batch_iter:
+            if all(image_id in done_ids for image_id in batch["image"]):
+                continue
+
             images = torch.tensor(batch["image"])
             inputs = processor(images=images, return_tensors="pt")
 
@@ -170,8 +183,8 @@ if __name__ == "__main__":
     parser.add_argument(
         "-g",
         "--gpu-id",
-        required=False,
-        default=0,
+        required=True,
+        nargs="+",
         type=int,
         help="The CUDA GPU id on which to run inference",
     )

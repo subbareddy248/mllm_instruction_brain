@@ -1,5 +1,6 @@
 import argparse
 from collections import OrderedDict
+import glob
 import numpy as np
 import pathlib
 import pickle
@@ -51,9 +52,7 @@ def main():
         config=model_config,
         cache_dir=HUGGINGFACE_CACHE_DIR,
         device_map="auto",
-        max_memory={
-            GPU_ID: "7GB",
-        },
+        max_memory={ gpu_id: "7GB" for gpu_id in GPU_IDS },
         low_cpu_mem_usage=True,
         offload_folder=HUGGINGFACE_CACHE_DIR.joinpath("offload", MODEL_NAME),
     )
@@ -91,11 +90,23 @@ def main():
                 total=total_batches,
             )
 
+        done_ids = []
+        batch_files = glob.glob(pathlib.Path(OUTPUT_DIR).joinpath("batch_*.pkl"))
+        for batch_file in batch_files:
+            with open(batch_file, "rb") as f:
+                batches = pickle.load(f)
+            for batch in batches:
+                done_ids.extend(batch["image_ids"])
+        done_ids = set(done_ids)
+
         for batch_num, batch in batch_iter:
+            if all(image_id in done_ids for image_id in batch["image"]):
+                continue
+
             images = [Image.fromarray(np.array(image).astype("uint8"), "RGB") for image in batch["image"]]
             prompts = [[image, PROMPT] for image in images]
 
-            inputs = processor(prompts, return_tensors="pt").to(f"cuda:{GPU_ID}")
+            inputs = processor(prompts, return_tensors="pt").to(f"cuda:{GPU_IDS}")
 
             outputs = model(**inputs, output_hidden_states=True)
             outputs = to_cpu(outputs)
@@ -180,8 +191,8 @@ if __name__ == "__main__":
     parser.add_argument(
         "-g",
         "--gpu-id",
-        required=False,
-        default=0,
+        required=True,
+        nargs="+",
         type=int,
         help="The CUDA GPU id on which to run inference",
     )
@@ -207,7 +218,7 @@ if __name__ == "__main__":
     SUBJECT: int = args.subject
     TEST_RUN: bool = args.test_run
     PROMPT: str = args.prompt
-    GPU_ID: int = args.gpu_id
+    GPU_IDS: int = args.gpu_id
     TELEGRAM_BOT_TOKEN: str = args.telegram_bot_token
     TELEGRAM_CHAT_ID: int = args.telegram_chat_id
     TO_USE_TELEGRAM: bool = TELEGRAM_BOT_TOKEN != "" and TELEGRAM_CHAT_ID != 0
