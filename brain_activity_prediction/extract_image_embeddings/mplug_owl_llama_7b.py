@@ -112,7 +112,7 @@ def main():
             )
 
         done_ids = []
-        batch_files = glob.glob(pathlib.Path(OUTPUT_DIR).joinpath("batch_*.pkl"))
+        batch_files = glob.glob(str(pathlib.Path(OUTPUT_DIR).joinpath("batch_*.pkl")))
         for batch_file in batch_files:
             with open(batch_file, "rb") as f:
                 batches = pickle.load(f)
@@ -121,7 +121,7 @@ def main():
         done_ids = set(done_ids)
 
         for batch_num, batch in batch_iter:
-            if all(image_id in done_ids for image_id in batch["image"]):
+            if all(image_id in done_ids for image_id in batch["id"]):
                 continue
 
             images = [PIL.Image.fromarray(np.array(image).astype("uint8"), "RGB") for image in batch["image"]]
