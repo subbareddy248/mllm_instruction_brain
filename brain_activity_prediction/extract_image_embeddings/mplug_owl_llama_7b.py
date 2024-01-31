@@ -54,30 +54,10 @@ def main():
     model_config.text_config.output_hidden_states = True
     model_config.vision_config.output_hidden_states = True
 
-    with accelerate.init_empty_weights():
-        _model_from_conf = MODEL_CLASS._from_config(model_config)
-
-    _model_from_conf.tie_weights()
-
-    device_map = accelerate.infer_auto_device_map(
-        _model_from_conf,
-        max_memory = {
-            GPU_ID: "7GB",
-        },
-    )
-
     model = MODEL_CLASS.from_pretrained(
         MODEL_ID,
         cache_dir=HUGGINGFACE_CACHE_DIR,
-        device_map=device_map,
         low_cpu_mem_usage=True,
-        offload_folder=HUGGINGFACE_CACHE_DIR.joinpath("offload", MODEL_NAME),
-        offload_state_dict=True,
-    )
-
-    accelerate.disk_offload(
-        model,
-        offload_dir=HUGGINGFACE_CACHE_DIR.joinpath("offload", MODEL_NAME),
     )
 
     def data_generator():
