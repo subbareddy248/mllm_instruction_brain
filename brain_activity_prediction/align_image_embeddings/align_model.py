@@ -59,20 +59,40 @@ def train_model(
         trn_scores = backend.to_numpy(pipeline.score(trn_hs, trn_voxel_data))
         val_scores = backend.to_numpy(pipeline.score(val_hs, val_voxel_data))
 
+        trn_hs_pred = backend.to_numpy(pipeline.predict(trn_hs))
+        val_hs_pred = backend.to_numpy(pipeline.predict(val_hs))
+
         pipelines.append(
             {
                 "pipeline": pipeline,
                 "trn_scores": trn_scores,
                 "val_scores": val_scores,
+                "trn_pred": trn_hs_pred,
+                "val_pred": val_hs_pred,
             }
         )
 
     return pipelines
 
 
+def get_roi_pearsons(brain, voxels, predictions, roi_masks):
+    roi_pearsons = {}
+
+    brain[:] = 0
+    brain[voxels[0], voxels[1], voxels[2]] = predictions
+    for roi in roi_masks:
+        if roi == "nsdgeneral":
+            continue
+        roi_mask = numpy.where(roi_masks[roi] == 1)
+        roi_score = numpy.average(brain[roi_mask[0], roi_mask[1], roi_mask[2]])
+        roi_pearsons[roi] = roi_score
+
+    return roi_pearsons
+
+
 def get_roi_scores(brain, voxels, scores, roi_masks):
     roi_scores = {}
-    
+
     brain[:] = 0
     brain[voxels[0], voxels[1], voxels[2]] = scores
     for roi in roi_masks:
@@ -145,6 +165,9 @@ def main():
             trn_score = stats["trn_scores"]
             val_score = stats["val_scores"]
 
+            trn_pred = stats["trn_pred"]
+            val_pred = stats["val_pred"]
+
             if trn_scores is None:
                 trn_scores = numpy.array([trn_score])
             else:
@@ -160,8 +183,17 @@ def main():
         trn_roi_scores = get_roi_scores(brain, voxels, trn_scores, roi_masks)
         val_roi_scores = get_roi_scores(brain, voxels, val_scores, roi_masks)
 
-        TRN_SCORES[hs_name] = trn_roi_scores
-        VAL_SCORES[hs_name] = val_roi_scores
+        trn_roi_pearsons = get_roi_pearsons(brain, voxels, trn_pred, roi_masks)
+        val_roi_pearsons = get_roi_pearsons(brain, voxels, val_pred, roi_masks)
+
+        TRN_SCORES[hs_name] = {
+            "r2": trn_roi_scores,
+            "pearson": trn_roi_pearsons,
+        }
+        VAL_SCORES[hs_name] = {
+            "r2": val_roi_scores,
+            "pearson": val_roi_pearsons,
+        }
 
     with open(OUTPUT_DIR.joinpath("training.pkl"), "wb") as f:
         pickle.dump(TRN_SCORES, f)
