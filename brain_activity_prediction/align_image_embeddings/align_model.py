@@ -62,32 +62,33 @@ def train_model(
         trn_hs_pred = backend.to_numpy(pipeline.predict(trn_hs))
         val_hs_pred = backend.to_numpy(pipeline.predict(val_hs))
 
+        trn_pearson_x, trn_pearson_y = trn_hs_pred.transpose(1, 0), trn_voxel_data.transpose(1, 0)
+        val_pearson_x, val_pearson_y = val_hs_pred.transpose(1, 0), val_voxel_data.transpose(1, 0)
+
+        trn_pearson_scores = []
+        val_pearson_scores = []
+
+        for voxel_num in range(trn_scores.shape[0]):
+            trn_pearson = numpy.corrcoef(trn_pearson_x[voxel_num], trn_pearson_y[voxel_num])
+            val_pearson = numpy.corrcoef(val_pearson_x[voxel_num], val_pearson_y[voxel_num])
+
+            trn_pearson_scores.append(trn_pearson[0][1])
+            val_pearson_scores.append(val_pearson[0][1])
+
+        trn_pearson_scores = numpy.array(trn_pearson_scores)
+        val_pearson_scores = numpy.array(val_pearson_scores)
+
         pipelines.append(
             {
                 "pipeline": pipeline,
                 "trn_scores": trn_scores,
                 "val_scores": val_scores,
-                "trn_pred": trn_hs_pred,
-                "val_pred": val_hs_pred,
+                "trn_pearson": trn_pearson_scores,
+                "val_pearson": val_pearson_scores,
             }
         )
 
     return pipelines
-
-
-def get_roi_pearsons(brain, voxels, predictions, roi_masks):
-    roi_pearsons = {}
-
-    brain[:] = 0
-    brain[voxels[0], voxels[1], voxels[2]] = predictions
-    for roi in roi_masks:
-        if roi == "nsdgeneral":
-            continue
-        roi_mask = numpy.where(roi_masks[roi] == 1)
-        roi_score = numpy.average(brain[roi_mask[0], roi_mask[1], roi_mask[2]])
-        roi_pearsons[roi] = roi_score
-
-    return roi_pearsons
 
 
 def get_roi_scores(brain, voxels, scores, roi_masks):
@@ -146,6 +147,32 @@ def main():
     TRN_SCORES = {}
     VAL_SCORES = {}
 
+    TRN_OUTPUT_FILE = OUTPUT_DIR.joinpath("training.pkl")
+    VAL_OUTPUT_FILE = OUTPUT_DIR.joinpath("validation.pkl")
+
+    ALL_DONE = True
+    for output_file in [TRN_OUTPUT_FILE, VAL_OUTPUT_FILE]:
+        if not output_file.exists():
+            ALL_DONE = False
+            break
+        with open(output_file, "rb") as f:
+            output_data = pickle.load(f)
+
+        for hs_name in HIDDEN_STATES.keys():
+            if hs_name not in output_data.keys():
+                ALL_DONE = False
+                break
+            if any(metric not in output_data[hs_name] for metric in ["r2", "pearson"]):
+                ALL_DONE = False
+                break
+        else:
+            continue
+        break
+
+    if ALL_DONE:
+        print("Already Done")
+        exit(0)
+
     for hs_name in HIDDEN_STATES.keys():
         pipelines = train_model(
             hs_name,
@@ -161,12 +188,15 @@ def main():
         trn_scores = None
         val_scores = None
 
+        trn_pearsons = None
+        val_pearsons = None
+
         for stats in pipelines:
             trn_score = stats["trn_scores"]
             val_score = stats["val_scores"]
 
-            trn_pred = stats["trn_pred"]
-            val_pred = stats["val_pred"]
+            trn_pearson = stats["trn_pearson"]
+            val_pearson = stats["val_pearson"]
 
             if trn_scores is None:
                 trn_scores = numpy.array([trn_score])
@@ -177,14 +207,26 @@ def main():
             else:
                 val_scores = numpy.concatenate((val_scores, [val_score]), axis=0)
 
+            if trn_pearsons is None:
+                trn_pearsons = numpy.array([trn_pearson])
+            else:
+                trn_pearsons = numpy.concatenate((trn_pearsons, [trn_pearson]), axis=0)
+            if val_pearsons is None:
+                val_pearsons = numpy.array([val_pearson])
+            else:
+                val_pearsons = numpy.concatenate((val_pearsons, [val_pearson]), axis=0)
+
         trn_scores = numpy.average(trn_scores, axis=0)
         val_scores = numpy.average(val_scores, axis=0)
+
+        trn_pearsons = numpy.average(trn_pearsons, axis=0)
+        val_pearsons = numpy.average(val_pearsons, axis=0)
 
         trn_roi_scores = get_roi_scores(brain, voxels, trn_scores, roi_masks)
         val_roi_scores = get_roi_scores(brain, voxels, val_scores, roi_masks)
 
-        trn_roi_pearsons = get_roi_pearsons(brain, voxels, trn_pred, roi_masks)
-        val_roi_pearsons = get_roi_pearsons(brain, voxels, val_pred, roi_masks)
+        trn_roi_pearsons = get_roi_scores(brain, voxels, trn_pearsons, roi_masks)
+        val_roi_pearsons = get_roi_scores(brain, voxels, val_pearsons, roi_masks)
 
         TRN_SCORES[hs_name] = {
             "r2": trn_roi_scores,
@@ -195,9 +237,9 @@ def main():
             "pearson": val_roi_pearsons,
         }
 
-    with open(OUTPUT_DIR.joinpath("training.pkl"), "wb") as f:
+    with open(TRN_OUTPUT_FILE, "wb") as f:
         pickle.dump(TRN_SCORES, f)
-    with open(OUTPUT_DIR.joinpath("validation.pkl"), "wb") as f:
+    with open(VAL_OUTPUT_FILE, "wb") as f:
         pickle.dump(VAL_SCORES, f)
 
 
