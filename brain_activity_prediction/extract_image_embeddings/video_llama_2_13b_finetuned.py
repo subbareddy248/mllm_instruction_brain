@@ -18,6 +18,7 @@ import nsd_dataset.mind_eye_nsd_utils as menutils
 # from mplug_owl.tokenization_mplug_owl import MplugOwlTokenizer
 # from mplug_owl.processing_mplug_owl import MplugOwlProcessor, MplugOwlImageProcessor
 from video_llama.common.config import Config as VideoLlamaConfig
+from video_llama.common.registry import registry
 
 
 MODEL_ID = "DAMO-NLP-SG/Video-LLaMA-2-13B-Finetuned"
@@ -48,6 +49,20 @@ def batchify(iterable, n=1):
 
 
 def main():
+    model_config = CONFIG.model_cfg
+    model_cls = registry.get_model_class(model_config.arch)
+    vis_processor_config = CONFIG.datasets_cfg.webvid.vis_processor.train
+    vis_processor_cls = registry.get_processor_class(vis_processor_config.name)
+
+    print(f"{vis_processor_cls = }, {model_cls = }")
+
+    model = model_cls.from_config(model_config)
+    model.eval()
+
+    vis_processor = vis_processor_cls.from_config(vis_processor_config)
+
+    exit(0)
+
     image_processor = MplugOwlImageProcessor.from_pretrained(MODEL_ID, cache_dir=HUGGINGFACE_CACHE_DIR)
     tokenizer = MplugOwlTokenizer.from_pretrained(MODEL_ID, cache_dir=HUGGINGFACE_CACHE_DIR)
     processor = MplugOwlProcessor(image_processor, tokenizer)
@@ -63,7 +78,7 @@ def main():
 
     device_map = accelerate.infer_auto_device_map(
         _model_from_conf,
-        max_memory = {
+        max_memory={
             GPU_ID: "7GB",
         },
     )
@@ -206,7 +221,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "-c",
-        "--config-file-path",
+        "--cfg-path",
         required=True,
         type=pathlib.Path,
         help="The path to the config file for the VideoLlama model",
@@ -264,7 +279,7 @@ if __name__ == "__main__":
         help="Telegram Chat ID to send tqdm updates to",
     )
     parser.add_argument(
-        "--additional-options",
+        "--options",
         nargs="+",
     )
 
@@ -272,7 +287,7 @@ if __name__ == "__main__":
 
     BATCH_SIZE: int = args.batch_size
     BASE_DIR: pathlib.Path = args.base_dir
-    CONFIG_FILE_PATH: pathlib.Path = args.config_file_path
+    CONFIG_FILE_PATH: pathlib.Path = args.cfg_path
     SUBJECT: int = args.subject
     TEST_RUN: bool = args.test_run
     PROMPT: str = args.prompt
@@ -280,7 +295,7 @@ if __name__ == "__main__":
     TELEGRAM_BOT_TOKEN: str = args.telegram_bot_token
     TELEGRAM_CHAT_ID: int = args.telegram_chat_id
     TO_USE_TELEGRAM: bool = TELEGRAM_BOT_TOKEN != "" and TELEGRAM_CHAT_ID != 0
-    ADDITIONAL_OPTIONS = args.additional_options
+    # ADDITIONAL_OPTIONS = args.additional_options
 
     if TO_USE_TELEGRAM:
         from tqdm.contrib.telegram import tqdm
@@ -293,10 +308,6 @@ if __name__ == "__main__":
 
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
-    llama_config_args = {
-        "cfg_path": CONFIG_FILE_PATH,
-        "options": ADDITIONAL_OPTIONS
-    }
-    CONFIG = VideoLlamaConfig(llama_config_args)
+    CONFIG = VideoLlamaConfig(args)
 
-    # main()
+    main()
