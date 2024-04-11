@@ -4,6 +4,7 @@ import glob
 import pathlib
 import pickle
 
+from prompts import ALL_PROMPTS
 
 from datasets import Dataset
 import torch
@@ -187,13 +188,20 @@ if __name__ == "__main__":
         action=argparse.BooleanOptionalAction,
         help="Enable test-run to just output the outputs for the first batch and exit",
     )
+    # parser.add_argument(
+    #     "-p",
+    #     "--prompt",
+    #     required=False,
+    #     default="Describe the image.",
+    #     type=str,
+    #     help="The prompt that will be passed into the model along with the images",
+    # )
     parser.add_argument(
         "-p",
-        "--prompt",
-        required=False,
-        default="Describe the image.",
-        type=str,
-        help="The prompt that will be passed into the model along with the images",
+        "--prompt-number",
+        required=True,
+        type=int,
+        help="The key number of the prompt from prompts.py that will be passed into the model along with the images",
     )
     parser.add_argument(
         "-g",
@@ -223,7 +231,7 @@ if __name__ == "__main__":
     BASE_DIR: pathlib.Path = args.base_dir
     SUBJECT: int = args.subject
     TEST_RUN: bool = args.test_run
-    PROMPT: str = args.prompt
+    PROMPT: str = ALL_PROMPTS[args.prompt_number]
     GPU_ID: int = args.gpu_id
     TELEGRAM_BOT_TOKEN: str = args.telegram_bot_token
     TELEGRAM_CHAT_ID: int = args.telegram_chat_id
