@@ -243,7 +243,7 @@ if __name__ == "__main__":
         from tqdm.auto import tqdm
 
     HUGGINGFACE_CACHE_DIR = BASE_DIR.joinpath(".huggingface_cache")
-    OUTPUT_DIR = BASE_DIR.joinpath("image_embeddings", MODEL_NAME, f"subject_0{SUBJECT}")
+    OUTPUT_DIR = BASE_DIR.joinpath("image_embeddings", f"prompt_{args.prompt_number}", MODEL_NAME, f"subject_0{SUBJECT}")
     MODEL_CHECKPOINTS_DIR = BASE_DIR.joinpath("cached_models", MODEL_NAME)
 
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
