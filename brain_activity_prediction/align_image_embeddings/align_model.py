@@ -69,11 +69,11 @@ def train_model(
         val_pearson_scores = []
 
         for voxel_num in range(trn_scores.shape[0]):
-            trn_pearson = numpy.corrcoef(trn_pearson_x[voxel_num], trn_pearson_y[voxel_num])
-            val_pearson = numpy.corrcoef(val_pearson_x[voxel_num], val_pearson_y[voxel_num])
+            trn_pearson = numpy.corrcoef(trn_pearson_x[voxel_num], trn_pearson_y[voxel_num])[0][1]
+            val_pearson = numpy.corrcoef(val_pearson_x[voxel_num], val_pearson_y[voxel_num])[0][1]
 
-            trn_pearson_scores.append(trn_pearson[0][1])
-            val_pearson_scores.append(val_pearson[0][1])
+            trn_pearson_scores.append(trn_pearson)
+            val_pearson_scores.append(val_pearson)
 
         trn_pearson_scores = numpy.array(trn_pearson_scores)
         val_pearson_scores = numpy.array(val_pearson_scores)
@@ -100,7 +100,7 @@ def get_roi_scores(brain, voxels, scores, roi_masks):
         if roi == "nsdgeneral":
             continue
         roi_mask = numpy.where(roi_masks[roi] == 1)
-        roi_score = numpy.average(brain[roi_mask[0], roi_mask[1], roi_mask[2]])
+        roi_score = numpy.nanmean(brain[roi_mask[0], roi_mask[1], roi_mask[2]])
         roi_scores[roi] = roi_score
 
     return roi_scores
@@ -216,11 +216,11 @@ def main():
             else:
                 val_pearsons = numpy.concatenate((val_pearsons, [val_pearson]), axis=0)
 
-        trn_scores = numpy.average(trn_scores, axis=0)
-        val_scores = numpy.average(val_scores, axis=0)
+        trn_scores = numpy.nanmean(trn_scores, axis=0)
+        val_scores = numpy.nanmean(val_scores, axis=0)
 
-        trn_pearsons = numpy.average(trn_pearsons, axis=0)
-        val_pearsons = numpy.average(val_pearsons, axis=0)
+        trn_pearsons = numpy.nanmean(trn_pearsons, axis=0)
+        val_pearsons = numpy.nanmean(val_pearsons, axis=0)
 
         trn_roi_scores = get_roi_scores(brain, voxels, trn_scores, roi_masks)
         val_roi_scores = get_roi_scores(brain, voxels, val_scores, roi_masks)
