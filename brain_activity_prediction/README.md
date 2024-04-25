@@ -31,4 +31,4 @@ these embeddings and output the corresponding brain activity (fMRI).
 
 ## TODO
 
-- [ ] Add some visual models that also deal with videos
+- [ ] Add samples for OpenFlamingo for different prompts
