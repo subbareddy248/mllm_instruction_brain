@@ -4,6 +4,8 @@ import glob
 import pathlib
 import pickle
 
+from prompts import ALL_PROMPTS
+
 from datasets import Dataset
 import torch
 import transformers
@@ -188,13 +190,19 @@ if __name__ == "__main__":
         action=argparse.BooleanOptionalAction,
         help="Enable test-run to just output the outputs for the first batch and exit",
     )
+    # parser.add_argument(
+    #     "-p",
+    #     "--prompt",
+    #     required=False,
+    #     default="USER: <image>\nWhat's the content of the image?\nASSISTANT:",
+    #     type=str,
+    #     help="The prompt that will be passed into the model along with the images",
+    # )
     parser.add_argument(
         "-p",
-        "--prompt",
-        required=False,
-        default="USER: <image>\nWhat's the content of the image?\nASSISTANT:",
-        type=str,
-        help="The prompt that will be passed into the model along with the images",
+        "--prompt-number",
+        type=int,
+        help="The key number of the prompt from prompts.py that will be passed into the model along with the images",
     )
     parser.add_argument(
         "-g",
@@ -224,11 +232,13 @@ if __name__ == "__main__":
     BASE_DIR: pathlib.Path = args.base_dir
     SUBJECT: int = args.subject
     TEST_RUN: bool = args.test_run
-    PROMPT: str = args.prompt
+    PROMPT_NUMBER: str = args.prompt_number
     GPU_ID: int = args.gpu_id
     TELEGRAM_BOT_TOKEN: str = args.telegram_bot_token
     TELEGRAM_CHAT_ID: int = args.telegram_chat_id
     TO_USE_TELEGRAM: bool = TELEGRAM_BOT_TOKEN != "" and TELEGRAM_CHAT_ID != 0
+
+    PROMPT = f"USER: <image>\n{ALL_PROMPTS[PROMPT_NUMBER]}\nASSISTANT:"
 
     if TO_USE_TELEGRAM:
         from tqdm.contrib.telegram import tqdm
@@ -236,7 +246,7 @@ if __name__ == "__main__":
         from tqdm.auto import tqdm
 
     HUGGINGFACE_CACHE_DIR = BASE_DIR.joinpath(".huggingface_cache")
-    OUTPUT_DIR = BASE_DIR.joinpath("image_embeddings", MODEL_NAME, f"subject_0{SUBJECT}")
+    OUTPUT_DIR = BASE_DIR.joinpath("image_embeddings", f"prompt_{PROMPT_NUMBER}", MODEL_NAME, f"subject_0{SUBJECT}")
     MODEL_CHECKPOINTS_DIR = BASE_DIR.joinpath("cached_models", MODEL_NAME)
 
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
