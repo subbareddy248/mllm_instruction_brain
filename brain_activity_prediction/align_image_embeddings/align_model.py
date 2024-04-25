@@ -109,6 +109,7 @@ def get_roi_scores(brain, voxels, scores, roi_masks):
 def main():
     hidden_states_filepath = BASE_DIR.joinpath(
         "image_embeddings",
+        f"prompt_{PROMPT_NUMBER}",
         MODEL_NAME,
         f"subject_{SUBJECT:02}",
         "hidden_states.pkl",
@@ -272,6 +273,13 @@ if __name__ == "__main__":
         help="The model id whose hidden state representations are to be used",
     )
     parser.add_argument(
+        "-p",
+        "--prompt-number",
+        type=int,
+        required=True,
+        help="The prompt number to use for aligning",
+    )
+    parser.add_argument(
         "--max-log-10-alpha",
         required=False,
         default=4,
@@ -305,6 +313,7 @@ if __name__ == "__main__":
     SUBJECT: int = args.subject
     BASE_DIR: pathlib.Path = args.base_dir
     MODEL_ID: str = args.model_id
+    PROMPT_NUMBER: int = args.prompt_number
     MAX_LOG_10_ALPHA: int = args.max_log_10_alpha
     NUM_ALPHAS: int = args.num_alphas
     TELEGRAM_BOT_TOKEN: str = args.telegram_bot_token
@@ -320,6 +329,7 @@ if __name__ == "__main__":
 
     OUTPUT_DIR = BASE_DIR.joinpath(
         "final_scores",
+        f"prompt_{PROMPT_NUMBER}",
         MODEL_NAME,
         f"subj{SUBJECT:02}",
     )
