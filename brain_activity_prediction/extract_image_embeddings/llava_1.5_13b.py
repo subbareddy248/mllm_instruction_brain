@@ -80,7 +80,7 @@ def main():
         if TO_USE_TELEGRAM:
             batch_iter = tqdm(
                 batch_iter,
-                desc=f"[Llava1.5_13b] Subject 0{SUBJECT}",
+                desc=f"[Llava1.5_13b] (Prompt_{args.prompt_number}) Subject 0{SUBJECT}",
                 mininterval=10,
                 maxinterval=20,
                 total=total_batches,

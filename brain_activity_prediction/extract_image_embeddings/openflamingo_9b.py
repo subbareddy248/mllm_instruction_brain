@@ -5,6 +5,7 @@ import pathlib
 import pickle
 from PIL import Image
 
+from prompts import ALL_PROMPTS
 
 from datasets import Dataset
 from huggingface_hub import hf_hub_download
@@ -79,7 +80,7 @@ def main():
         if TO_USE_TELEGRAM:
             batch_iter = tqdm(
                 batch_iter,
-                desc=f"[OpenFlamingo] Subject 0{SUBJECT}",
+                desc=f"[OpenFlamingo] (Prompt_{PROMPT}) Subject 0{SUBJECT}",
                 mininterval=10,
                 maxinterval=20,
                 total=total_batches,
@@ -210,6 +211,13 @@ if __name__ == "__main__":
     #     type=str,
     #     help="The prompt that will be passed into the model along with the images",
     # )
+    parser.add_argument(
+        "-p",
+        "--prompt-number",
+        required=True,
+        type=int,
+        help="The key number of the prompt from prompts.py that will be passed into the model along with the images",
+    )
     parser.add_argument(
         "-g",
         "--gpu-id",

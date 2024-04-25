@@ -6,6 +6,7 @@ import pathlib
 import pickle
 from PIL import Image
 
+from prompts import ALL_PROMPTS
 
 from datasets import Dataset
 import torch
@@ -79,7 +80,7 @@ def main():
         if TO_USE_TELEGRAM:
             batch_iter = tqdm(
                 batch_iter,
-                desc=f"[Idefics9B_Instruct] Subject 0{SUBJECT}",
+                desc=f"[Idefics9B_Instruct] (Prompt_{args.prompt_number}) Subject 0{SUBJECT}",
                 mininterval=10,
                 maxinterval=20,
                 total=total_batches,
@@ -106,7 +107,16 @@ def main():
                 continue
 
             images = [Image.fromarray(np.array(image).astype("uint8"), "RGB") for image in batch["image"]]
-            prompts = [[image, PROMPT] for image in images]
+            prompts = [
+                [
+                    f"User: {PROMPT}",
+                    image,
+                    "<end_of_utterance>",
+
+                    "\nAssistant:",
+                ]
+                for image in images
+            ]
 
             inputs = processor(prompts, return_tensors="pt").to(f"cuda:{GPU_ID}")
 
@@ -182,13 +192,20 @@ if __name__ == "__main__":
         action=argparse.BooleanOptionalAction,
         help="Enable test-run to just output the outputs for the first batch and exit",
     )
+    # parser.add_argument(
+    #     "-p",
+    #     "--prompt",
+    #     required=False,
+    #     default="In this picture, we can see",
+    #     type=str,
+    #     help="The prompt that will be passed into the model along with the images",
+    # )
     parser.add_argument(
         "-p",
-        "--prompt",
-        required=False,
-        default="In this picture, we can see",
-        type=str,
-        help="The prompt that will be passed into the model along with the images",
+        "--prompt-number",
+        required=True,
+        type=int,
+        help="The key number of the prompt that will be passed into the model along with the images",
     )
     parser.add_argument(
         "-g",
@@ -218,7 +235,7 @@ if __name__ == "__main__":
     BASE_DIR: pathlib.Path = args.base_dir
     SUBJECT: int = args.subject
     TEST_RUN: bool = args.test_run
-    PROMPT: str = args.prompt
+    PROMPT: str = ALL_PROMPTS[args.prompt_number]
     GPU_ID: int = args.gpu_id
     TELEGRAM_BOT_TOKEN: str = args.telegram_bot_token
     TELEGRAM_CHAT_ID: int = args.telegram_chat_id
@@ -230,7 +247,7 @@ if __name__ == "__main__":
         from tqdm.auto import tqdm
 
     HUGGINGFACE_CACHE_DIR = BASE_DIR.joinpath(".huggingface_cache")
-    OUTPUT_DIR = BASE_DIR.joinpath("image_embeddings", MODEL_NAME, f"subject_0{SUBJECT}")
+    OUTPUT_DIR = BASE_DIR.joinpath("image_embeddings", f"prompt_{args.prompt_number}", MODEL_NAME, f"subject_0{SUBJECT}")
     MODEL_CHECKPOINTS_DIR = BASE_DIR.joinpath("cached_models", MODEL_NAME)
 
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
