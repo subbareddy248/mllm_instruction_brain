@@ -7,7 +7,6 @@ import PIL
 
 from prompts import ALL_PROMPTS
 
-import accelerate
 from datasets import Dataset
 import numpy as np
 import torch
@@ -47,8 +46,8 @@ def batchify(iterable, n=1):
 
 
 def main():
-    image_processor = MplugOwlImageProcessor.from_pretrained(MODEL_ID, cache_dir=HUGGINGFACE_CACHE_DIR)
-    tokenizer = MplugOwlTokenizer.from_pretrained(MODEL_ID, cache_dir=HUGGINGFACE_CACHE_DIR)
+    image_processor = MplugOwlImageProcessor.from_pretrained(MODEL_ID) # , cache_dir=HUGGINGFACE_CACHE_DIR)
+    tokenizer = MplugOwlTokenizer.from_pretrained(MODEL_ID) # , cache_dir=HUGGINGFACE_CACHE_DIR)
     processor = MplugOwlProcessor(image_processor, tokenizer)
 
     model_config = MplugOwlConfig.from_pretrained(MODEL_ID)
@@ -57,9 +56,8 @@ def main():
 
     model = MODEL_CLASS.from_pretrained(
         MODEL_ID,
-        cache_dir=HUGGINGFACE_CACHE_DIR,
-        low_cpu_mem_usage=True,
-    )
+        # cache_dir=HUGGINGFACE_CACHE_DIR,
+    ).to(GPU_DEVICE)
 
     def data_generator():
         image_ids, images = menutils.get_subject_images(BASE_DIR, SUBJECT)
@@ -67,7 +65,7 @@ def main():
         for image_id, image in zip(image_ids, images):
             yield {"id": image_id, "image": image}
 
-    dataset = Dataset.from_generator(data_generator, cache_dir=HUGGINGFACE_CACHE_DIR.joinpath("datasets"))
+    dataset = Dataset.from_generator(data_generator) # , cache_dir=HUGGINGFACE_CACHE_DIR.joinpath("datasets"))
 
     batches = batchify(dataset, n=BATCH_SIZE)
     total_batches = len(dataset) // BATCH_SIZE
@@ -111,9 +109,12 @@ def main():
             text = [PROMPT] * BATCH_SIZE
 
             inputs = processor(images=images, text=text, return_tensors="pt")
-            non_padding_mask = (inputs.input_ids != tokenizer.pad_token_id)[:, :-1]
-            non_media_mask = torch.ones_like(non_padding_mask)
-            prompt_mask = torch.zeros_like(non_padding_mask)
+            for k, v in inputs:
+                inputs[k] = v.to(GPU_DEVICE)
+
+            non_padding_mask = ((inputs.input_ids != tokenizer.pad_token_id)[:, :-1]).to(GPU_DEVICE)
+            non_media_mask = torch.ones_like(non_padding_mask).to(GPU_DEVICE)
+            prompt_mask = torch.zeros_like(non_padding_mask).to(GPU_DEVICE)
 
             outputs = model(
                 **inputs,
@@ -260,6 +261,8 @@ if __name__ == "__main__":
     else:
         from tqdm.auto import tqdm
 
+    GPU_DEVICE: str = f"cuda:{GPU_ID}"
+
     PROMPT = (
         "The following is a conversation between a curious human and AI assistant. "
         "The assistant gives helpful, detailed, and polite answers to the user's questions.\n"
@@ -268,9 +271,8 @@ if __name__ == "__main__":
         "AI:"
     )
 
-    HUGGINGFACE_CACHE_DIR = BASE_DIR.joinpath(".huggingface_cache")
+    # HUGGINGFACE_CACHE_DIR = BASE_DIR.joinpath(".huggingface_cache")
     OUTPUT_DIR = BASE_DIR.joinpath("image_embeddings", f"prompt_{args.prompt_number}", MODEL_NAME, f"subject_0{SUBJECT}")
-    MODEL_CHECKPOINTS_DIR = BASE_DIR.joinpath("cached_models", MODEL_NAME)
 
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 

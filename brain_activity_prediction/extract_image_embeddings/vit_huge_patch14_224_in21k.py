@@ -40,9 +40,7 @@ def batchify(iterable, n=1):
 
 
 def main():
-    device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
-
-    processor = PROCESSOR_CLASS.from_pretrained(MODEL_ID, cache_dir=HUGGINGFACE_CACHE_DIR)
+    processor = PROCESSOR_CLASS.from_pretrained(MODEL_ID) # , cache_dir=HUGGINGFACE_CACHE_DIR)
 
     model_config = CONFIG_CLASS.from_pretrained(MODEL_ID)
     model_config.output_hidden_states = True
@@ -50,9 +48,8 @@ def main():
     model = MODEL_CLASS.from_pretrained(
         MODEL_ID,
         config=model_config,
-        cache_dir=HUGGINGFACE_CACHE_DIR,
-        offload_folder=HUGGINGFACE_CACHE_DIR.joinpath("offload", MODEL_NAME),
-    ).to(device)
+        # cache_dir=HUGGINGFACE_CACHE_DIR,
+    ).to(GPU_DEVICE)
 
     def data_generator():
         image_ids, images = menutils.get_subject_images(BASE_DIR, SUBJECT)
@@ -60,7 +57,7 @@ def main():
         for image_id, image in zip(image_ids, images):
             yield {"id": image_id, "image": image}
 
-    dataset = Dataset.from_generator(data_generator, cache_dir=HUGGINGFACE_CACHE_DIR.joinpath("datasets"))
+    dataset = Dataset.from_generator(data_generator) # , cache_dir=HUGGINGFACE_CACHE_DIR.joinpath("datasets"))
 
     batches = batchify(dataset, n=BATCH_SIZE)
     total_batches = len(dataset) // BATCH_SIZE
@@ -105,7 +102,7 @@ def main():
             inputs = processor(images=images, return_tensors="pt")
 
             for k, v in inputs.items():
-                inputs[k] = v.to(device)
+                inputs[k] = v.to(GPU_DEVICE)
 
             outputs = model(**inputs, output_hidden_states=True)
             outputs = to_cpu(outputs)
@@ -217,9 +214,10 @@ if __name__ == "__main__":
     else:
         from tqdm.auto import tqdm
 
-    HUGGINGFACE_CACHE_DIR = BASE_DIR.joinpath(".huggingface_cache")
+    GPU_DEVICE: str = f"cuda:{GPU_ID}"
+
+    # HUGGINGFACE_CACHE_DIR = BASE_DIR.joinpath(".huggingface_cache")
     OUTPUT_DIR = BASE_DIR.joinpath("image_embeddings", MODEL_NAME, f"subject_0{SUBJECT}")
-    MODEL_CHECKPOINTS_DIR = BASE_DIR.joinpath("cached_models", MODEL_NAME)
 
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 

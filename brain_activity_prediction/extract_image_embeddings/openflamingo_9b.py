@@ -259,7 +259,6 @@ if __name__ == "__main__":
 
     HUGGINGFACE_CACHE_DIR = BASE_DIR.joinpath(".huggingface_cache")
     OUTPUT_DIR = BASE_DIR.joinpath("image_embeddings", MODEL_NAME, f"subject_0{SUBJECT}")
-    MODEL_CHECKPOINTS_DIR = BASE_DIR.joinpath("cached_models", MODEL_NAME)
 
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
