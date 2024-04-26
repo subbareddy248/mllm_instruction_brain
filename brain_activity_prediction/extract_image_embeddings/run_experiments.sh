@@ -21,6 +21,8 @@ tgme() {
     ./tgme -b "$TELEGRAM_BOT_TOKEN" -c "$TELEGRAM_CHAT_ID" "$@"
 }
 
+set -x
+
 for subject in 1 2 5 7; do
     for prompt_number in {1..9}; do
         params="Subject $subject, Prompt $prompt_number"
