@@ -180,7 +180,7 @@ if __name__ == "__main__":
         "-d",
         "--base-dir",
         required=False,
-        default=pathlib.Path("/tmp/akshett.jindal"),
+        # default=pathlib.Path("/tmp/akshett.jindal"),
         type=pathlib.Path,
         help="The path to the directory where all the models, inputs and the outputs will be cached and loaded from",
     )
