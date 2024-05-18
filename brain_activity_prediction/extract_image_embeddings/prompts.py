@@ -101,10 +101,10 @@ ALL_PROMPTS = {
     65: "Evaluate the type of disaster shown.",
     66: "Specify the disaster type based on the image.",
 
-    # Visual Dialogue
-    67: "Based on the image, what would you ask the person in the scene?",
-    68: "Given the scene, what would be your next question?",
-    69: "Generate a dialogue that could be occurring in the image.",
-    70: "Given the context of the image, what question arises?",
-    71: "Craft a question that relates to the image.",
+    # # Visual Dialogue
+    # 67: "Based on the image, what would you ask the person in the scene?",
+    # 68: "Given the scene, what would be your next question?",
+    # 69: "Generate a dialogue that could be occurring in the image.",
+    # 70: "Given the context of the image, what question arises?",
+    # 71: "Craft a question that relates to the image.",
 }
