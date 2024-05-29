@@ -1,4 +1,5 @@
 import argparse
+import glob
 from himalaya.backend import set_backend
 from himalaya.ridge import RidgeCV
 from nsd_dataset import mind_eye_nsd_utils as menutils
@@ -107,15 +108,33 @@ def get_roi_scores(brain, voxels, scores, roi_masks):
 
 
 def main():
-    hidden_states_filepath = BASE_DIR.joinpath(
+    batch_files = glob.glob(str(BASE_DIR.joinpath(
         "image_embeddings",
         f"prompt_{PROMPT_NUMBER}",
         MODEL_NAME,
         f"subject_{SUBJECT:02}",
-        "hidden_states.pkl",
-    )
-    with open(hidden_states_filepath, "rb") as f:
-        HIDDEN_STATES = pickle.load(f)
+        "*.pkl",
+    )))
+
+    HIDDEN_STATES = {}
+
+    for batch_file in batch_files:
+        with open(batch_file, "rb") as f:
+            batches = pickle.load(f)
+
+        for batch in batches:
+            keys = set([k for k in batch.keys() if k != "image_ids"])
+
+            for image_num, image_id in enumerate(batch["image_ids"]):
+                for key in keys:
+                    if key not in HIDDEN_STATES:
+                        HIDDEN_STATES[key] = {}
+
+                    hs = tuple(hs[image_num] for hs in batch[key])
+                    HIDDEN_STATES[key][image_id] = hs
+
+            del batch
+
     print(f"{HIDDEN_STATES.keys() = }")
 
     (
@@ -262,7 +281,7 @@ if __name__ == "__main__":
         "-d",
         "--base-dir",
         required=False,
-        default=pathlib.Path("/tmp/akshett.jindal"),
+        # default=pathlib.Path("/tmp/akshett.jindal"),
         help="The path to the directory where all the models, inputs and outputs will be stored and loaded from",
     )
     parser.add_argument(

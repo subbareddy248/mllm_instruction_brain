@@ -67,8 +67,8 @@ def main():
     batches = batchify(dataset, n=BATCH_SIZE)
     total_batches = len(dataset) // BATCH_SIZE
 
-    with open("./openflamingo_samples.pkl", "rb") as f:
-        sample_data = pickle.load(f)
+    # with open("./openflamingo_samples.pkl", "rb") as f:
+    #     sample_data = pickle.load(f)
 
     model.eval()
 
@@ -107,8 +107,8 @@ def main():
                 continue
 
             input_images = [
-                sample_data["image_1"],
-                sample_data["image_2"],
+                # sample_data["image_1"],
+                # sample_data["image_2"],
                 np.array(batch["image"][0]).astype("uint8"),
             ]
             input_images = [Image.fromarray(image.astype("uint8"), "RGB") for image in input_images]
@@ -120,9 +120,9 @@ def main():
             tokenizer.padding_side = "left"
             lang_x = tokenizer(
                 [
-                    f"<image>Question: Describe the image. Answer: {sample_data['caption_1']}<|endofchunk|>"
-                    f"<image>Question: Describe the image. Answer: {sample_data['caption_2']}<|endofchunk|>"
-                    f"<image>Question: Describe the image. Answer:"
+                    # f"<image>Question: Describe the image. Answer: {sample_data['caption_1']}<|endofchunk|>"
+                    # f"<image>Question: Describe the image. Answer: {sample_data['caption_2']}<|endofchunk|>"
+                    f"<image>Question: {PROMPT}\nAnswer:"
                 ],
                 return_tensors="pt",
             )
@@ -182,7 +182,7 @@ if __name__ == "__main__":
         "-d",
         "--base-dir",
         required=False,
-        default=pathlib.Path("/tmp/akshett.jindal"),
+        # default=pathlib.Path("/tmp/akshett.jindal"),
         type=pathlib.Path,
         help="The path to the directory where all the models, inputs and the outputs will be cached and loaded from",
     )
@@ -247,6 +247,7 @@ if __name__ == "__main__":
     BASE_DIR: pathlib.Path = args.base_dir
     SUBJECT: int = args.subject
     TEST_RUN: bool = args.test_run
+    PROMPT: str = ALL_PROMPTS[args.prompt_number]
     GPU_ID: int = args.gpu_id
     TELEGRAM_BOT_TOKEN: str = args.telegram_bot_token
     TELEGRAM_CHAT_ID: int = args.telegram_chat_id
