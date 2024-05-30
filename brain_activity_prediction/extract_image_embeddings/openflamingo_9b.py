@@ -55,6 +55,7 @@ def main():
         MODEL_ID, "checkpoint.pt", cache_dir=HUGGINGFACE_CACHE_DIR.joinpath("openflamingo_cache")
     )
     model.load_state_dict(torch.load(checkpoint_path), strict=False)
+    model = model.to(GPU_DEVICE)
 
     def data_generator():
         image_ids, images = menutils.get_subject_images(BASE_DIR, SUBJECT)
@@ -129,8 +130,8 @@ def main():
 
             outputs = model(
                 vision_x=vision_x,
-                lang_x=lang_x["input_ids"],
-                attention_mask=lang_x["attention_mask"],
+                lang_x=lang_x["input_ids"].to(GPU_DEVICE),
+                attention_mask=lang_x["attention_mask"].to(GPU_DEVICE),
             )
             outputs = to_cpu(outputs)
 

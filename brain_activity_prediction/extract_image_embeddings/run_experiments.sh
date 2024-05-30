@@ -24,7 +24,7 @@ tgme() {
 set -x
 
 for subject in 1 2 5 7; do
-    for prompt_number in {1..9}; do
+    for prompt_number in {1..66}; do
         params="Subject $subject, Prompt $prompt_number"
 
         ####################################################
@@ -76,6 +76,17 @@ for subject in 1 2 5 7; do
             -b 2 -p "$prompt_number" -s "$subject" -g "$GPU_ID" \
             --telegram-bot-token "$TELEGRAM_BOT_TOKEN" --telegram-chat-id="$TELEGRAM_CHAT_ID" \
             -d "$BASE_DIRECTORY" && tgme "$model" "$params" "Success" || tgme "$model" "$params" "Failed"
+
+        ####################################################
+
+        model="OpenFlamingo"
+        tgme "$model" "$params" "Starting"
+
+        python3 openflamingo_9b.py \
+            -p "$prompt_number" -s "$subject" -g "$GPU_ID" \
+            --telegram-bot-token "$TELEGRAM_BOT_TOKEN" --telegram-chat-id="$TELEGRAM_CHAT_ID" \
+            -d "$BASE_DIRECTORY" && tgme "$model" "$params" "Success" || tgme "$model" "$params" "Failed"
+
 
         ####################################################
     done
