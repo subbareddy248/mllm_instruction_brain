@@ -258,7 +258,7 @@ def main():
     with open(VAL_OUTPUT_FILE, "wb") as f:
         pickle.dump(VAL_SCORES, f)
     with open(PREDS_OUTPUT_FILE, "wb") as f:
-        pickle.dump(val_preds_avg)
+        pickle.dump(val_preds_avg, f)
 
 
 if __name__ == "__main__":
