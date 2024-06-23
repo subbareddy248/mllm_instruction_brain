@@ -8,6 +8,8 @@ import pathlib
 import pickle
 from sklearn.pipeline import make_pipeline
 
+LAYER_NUM_DEFAULT_VALUE = -10000
+
 
 def train_model(
     hidden_states_name,
@@ -21,11 +23,15 @@ def train_model(
 ):
     pipelines = []
 
-    for i in hidden_states.values():
-        num_hidden_layers = len(i)
-        break
+    num_hidden_layers = 0
+    if LAYER_NUM != LAYER_NUM_DEFAULT_VALUE:
+        num_hidden_layers = 1
+    else:
+        for i in hidden_states.values():
+            num_hidden_layers = len(i)
+            break
 
-    hidden_layers_iter = range(num_hidden_layers)
+    hidden_layers_iter = range(num_hidden_layers) if LAYER_NUM == LAYER_NUM_DEFAULT_VALUE else [LAYER_NUM]
     if TO_USE_TELEGRAM:
         hidden_layers_iter = tqdm(
             hidden_layers_iter,
@@ -288,6 +294,14 @@ if __name__ == "__main__":
         help="The prompt number to use for aligning",
     )
     parser.add_argument(
+        "-l",
+        "--layer-number",
+        type=int,
+        required=False,
+        default=LAYER_NUM_DEFAULT_VALUE,
+        help="The layer numbers to find the alignment for. It can be a number like 0, 1 or a negative number like -1 for the last layer. If not passed, then all the layers will be trained and average score will be extracted",
+    )
+    parser.add_argument(
         "--max-log-10-alpha",
         required=False,
         default=4,
@@ -327,6 +341,7 @@ if __name__ == "__main__":
     TELEGRAM_BOT_TOKEN: str = args.telegram_bot_token
     TELEGRAM_CHAT_ID: int = args.telegram_chat_id
     TO_USE_TELEGRAM: bool = TELEGRAM_BOT_TOKEN != "" and TELEGRAM_CHAT_ID != 0
+    LAYER_NUM: int = args.layer_number
 
     MODEL_NAME = MODEL_ID.replace("/", "_").replace(" ", "_")
 
@@ -340,6 +355,7 @@ if __name__ == "__main__":
         f"prompt_{PROMPT_NUMBER}",
         MODEL_NAME,
         f"subj{SUBJECT:02}",
+        f"layer_{'all' if LAYER_NUM == LAYER_NUM_DEFAULT_VALUE else LAYER_NUM}"
     )
 
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
