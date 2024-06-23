@@ -1,6 +1,7 @@
 import argparse
 import glob
 from himalaya.backend import set_backend
+from npp import zscore
 from himalaya.ridge import RidgeCV
 from nsd_dataset import mind_eye_nsd_utils as menutils
 import numpy
@@ -51,8 +52,8 @@ def train_model(
     val_preds_avg = []
 
     for layer_num in hidden_layers_iter:
-        trn_hs = numpy.array([hidden_states[image_id + 1][layer_num] for image_id in trn_images])
-        val_hs = numpy.array([hidden_states[image_id + 1][layer_num] for image_id in val_images])
+        trn_hs = zscore(numpy.array([hidden_states[image_id + 1][layer_num] for image_id in trn_images]))
+        val_hs = zscore(numpy.array([hidden_states[image_id + 1][layer_num] for image_id in val_images]))
 
         ridge_cv = RidgeCV(
             alphas=alphas,
@@ -161,6 +162,9 @@ def main():
             val_voxel_data,
         ),
     ) = menutils.get_split_data(BASE_DIR, SUBJECT, average_out_fmri=True)
+
+    trn_voxel_data = zscore(trn_voxel_data)
+    val_voxel_data = zscore(val_voxel_data)
 
     exp_design_file = menutils.load_exp_design_file(BASE_DIR)
     trial_images = exp_design_file["subjectim"]
