@@ -42,6 +42,8 @@ def train_model(
             total=num_hidden_layers,
         )
 
+    val_preds_avg = []
+
     for layer_num in hidden_layers_iter:
         trn_hs = numpy.array([hidden_states[image_id + 1][layer_num] for image_id in trn_images])
         val_hs = numpy.array([hidden_states[image_id + 1][layer_num] for image_id in val_images])
@@ -62,6 +64,8 @@ def train_model(
 
         trn_hs_pred = backend.to_numpy(pipeline.predict(trn_hs))
         val_hs_pred = backend.to_numpy(pipeline.predict(val_hs))
+
+        val_preds_avg.append(val_hs_pred)
 
         trn_pearson_x, trn_pearson_y = trn_hs_pred.transpose(1, 0), trn_voxel_data.transpose(1, 0)
         val_pearson_x, val_pearson_y = val_hs_pred.transpose(1, 0), val_voxel_data.transpose(1, 0)
@@ -89,7 +93,10 @@ def train_model(
             }
         )
 
-    return pipelines
+    val_preds_avg = numpy.array(val_preds_avg)
+    val_preds_avg = numpy.mean(val_preds_avg, axis=0)
+
+    return pipelines, val_preds_avg
 
 
 def get_roi_scores(brain, voxels, scores, roi_masks):
@@ -170,32 +177,10 @@ def main():
 
     TRN_OUTPUT_FILE = OUTPUT_DIR.joinpath("training.pkl")
     VAL_OUTPUT_FILE = OUTPUT_DIR.joinpath("validation.pkl")
-
-    ALL_DONE = True
-    for output_file in [TRN_OUTPUT_FILE, VAL_OUTPUT_FILE]:
-        if not output_file.exists():
-            ALL_DONE = False
-            break
-        with open(output_file, "rb") as f:
-            output_data = pickle.load(f)
-
-        for hs_name in HIDDEN_STATES.keys():
-            if hs_name not in output_data.keys():
-                ALL_DONE = False
-                break
-            if any(metric not in output_data[hs_name] for metric in ["r2", "pearson"]):
-                ALL_DONE = False
-                break
-        else:
-            continue
-        break
-
-    if ALL_DONE:
-        print("Already Done")
-        exit(0)
+    PREDS_OUTPUT_FILE = OUTPUT_DIR.joinpath("val_predictions.pkl")
 
     for hs_name in HIDDEN_STATES.keys():
-        pipelines = train_model(
+        pipelines, val_preds_avg = train_model(
             hs_name,
             HIDDEN_STATES[hs_name],
             trn_images,
@@ -262,6 +247,8 @@ def main():
         pickle.dump(TRN_SCORES, f)
     with open(VAL_OUTPUT_FILE, "wb") as f:
         pickle.dump(VAL_SCORES, f)
+    with open(PREDS_OUTPUT_FILE, "wb") as f:
+        pickle.dump(val_preds_avg)
 
 
 if __name__ == "__main__":
