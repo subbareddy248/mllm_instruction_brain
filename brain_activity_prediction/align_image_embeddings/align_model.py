@@ -282,6 +282,7 @@ if __name__ == "__main__":
         "-d",
         "--base-dir",
         required=False,
+        type=pathlib.Path,
         # default=pathlib.Path("/tmp/akshett.jindal"),
         help="The path to the directory where all the models, inputs and outputs will be stored and loaded from",
     )
