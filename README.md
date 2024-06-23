@@ -65,6 +65,8 @@
                         The path to the directory where all the models, inputs and outputs will be stored and loaded from
   -m MODEL_ID, --model-id MODEL_ID
                         The model id whose hidden state representations are to be used
+  -l LAYER_NUM, --layer-number LAYER_NUM
+                        The layer number to align. It can be 0,1 etc or -1 for last layer. Not passing it will train all layers.
   -p PROMPT_NUMBER, --prompt-number PROMPT_NUMBER
                         The prompt number to use for aligning
   --max-log-10-alpha MAX_LOG_10_ALPHA
