@@ -8,6 +8,8 @@ import pathlib
 import pickle
 from sklearn.pipeline import make_pipeline
 
+LAYER_NUM_DEFAULT_VALUE = -10000
+
 
 def train_model(
     hidden_states_name,
@@ -21,11 +23,15 @@ def train_model(
 ):
     pipelines = []
 
-    for i in hidden_states.values():
-        num_hidden_layers = len(i)
-        break
+    num_hidden_layers = 0
+    if LAYER_NUM != LAYER_NUM_DEFAULT_VALUE:
+        num_hidden_layers = 1
+    else:
+        for i in hidden_states.values():
+            num_hidden_layers = len(i)
+            break
 
-    hidden_layers_iter = range(num_hidden_layers)
+    hidden_layers_iter = range(num_hidden_layers) if LAYER_NUM == LAYER_NUM_DEFAULT_VALUE else [LAYER_NUM]
     if TO_USE_TELEGRAM:
         hidden_layers_iter = tqdm(
             hidden_layers_iter,
@@ -41,6 +47,9 @@ def train_model(
             hidden_layers_iter,
             total=num_hidden_layers,
         )
+
+
+    val_preds_avg = []
 
     for layer_num in hidden_layers_iter:
         trn_hs = numpy.array([hidden_states[image_id + 1][layer_num] for image_id in trn_images])
@@ -62,6 +71,8 @@ def train_model(
 
         trn_hs_pred = backend.to_numpy(pipeline.predict(trn_hs))
         val_hs_pred = backend.to_numpy(pipeline.predict(val_hs))
+
+        val_preds_avg.append(val_hs_pred)
 
         trn_pearson_x, trn_pearson_y = trn_hs_pred.transpose(1, 0), trn_voxel_data.transpose(1, 0)
         val_pearson_x, val_pearson_y = val_hs_pred.transpose(1, 0), val_voxel_data.transpose(1, 0)
@@ -89,7 +100,10 @@ def train_model(
             }
         )
 
-    return pipelines
+    val_preds_avg = numpy.array(val_preds_avg)
+    val_preds_avg = numpy.mean(val_preds_avg, axis=0)
+
+    return pipelines, val_preds_avg
 
 
 def get_roi_scores(brain, voxels, scores, roi_masks):
@@ -169,32 +183,10 @@ def main():
 
     TRN_OUTPUT_FILE = OUTPUT_DIR.joinpath("training.pkl")
     VAL_OUTPUT_FILE = OUTPUT_DIR.joinpath("validation.pkl")
-
-    ALL_DONE = True
-    for output_file in [TRN_OUTPUT_FILE, VAL_OUTPUT_FILE]:
-        if not output_file.exists():
-            ALL_DONE = False
-            break
-        with open(output_file, "rb") as f:
-            output_data = pickle.load(f)
-
-        for hs_name in HIDDEN_STATES.keys():
-            if hs_name not in output_data.keys():
-                ALL_DONE = False
-                break
-            if any(metric not in output_data[hs_name] for metric in ["r2", "pearson"]):
-                ALL_DONE = False
-                break
-        else:
-            continue
-        break
-
-    if ALL_DONE:
-        print("Already Done")
-        exit(0)
+    PREDS_OUTPUT_FILE = OUTPUT_DIR.joinpath("val_predictions.pkl")
 
     for hs_name in HIDDEN_STATES.keys():
-        pipelines = train_model(
+        pipelines, val_preds_avg = train_model(
             hs_name,
             HIDDEN_STATES[hs_name],
             trn_images,
@@ -261,6 +253,8 @@ def main():
         pickle.dump(TRN_SCORES, f)
     with open(VAL_OUTPUT_FILE, "wb") as f:
         pickle.dump(VAL_SCORES, f)
+    with open(PREDS_OUTPUT_FILE, "wb") as f:
+        pickle.dump(PREDS_OUTPUT_FILE, f)
 
 
 if __name__ == "__main__":
@@ -298,6 +292,14 @@ if __name__ == "__main__":
         type=int,
         required=True,
         help="The prompt number to use for aligning",
+    )
+    parser.add_argument(
+        "-l",
+        "--layer-number",
+        type=int,
+        required=False,
+        default=LAYER_NUM_DEFAULT_VALUE,
+        help="The layer numbers to find the alignment for. It can be a number like 0, 1 or a negative number like -1 for the last layer. If not passed, then all the layers will be trained and average score will be extracted",
     )
     parser.add_argument(
         "--max-log-10-alpha",
@@ -339,6 +341,7 @@ if __name__ == "__main__":
     TELEGRAM_BOT_TOKEN: str = args.telegram_bot_token
     TELEGRAM_CHAT_ID: int = args.telegram_chat_id
     TO_USE_TELEGRAM: bool = TELEGRAM_BOT_TOKEN != "" and TELEGRAM_CHAT_ID != 0
+    LAYER_NUM: int = args.layer_number
 
     MODEL_NAME = MODEL_ID.replace("/", "_").replace(" ", "_")
 
@@ -352,6 +355,7 @@ if __name__ == "__main__":
         f"prompt_{PROMPT_NUMBER}",
         MODEL_NAME,
         f"subj{SUBJECT:02}",
+        f"layer_{'all' if LAYER_NUM == LAYER_NUM_DEFAULT_VALUE else LAYER_NUM}"
     )
 
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
