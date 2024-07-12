@@ -53,7 +53,7 @@ def batchify(iterable, n=1):
 
 def main():
     image_processor = MplugOwlImageProcessor.from_pretrained(MODEL_ID, cache_dir=HUGGINGFACE_CACHE_DIR)
-    tokenizer = MplugOwlTokenizer.from_pretrained(MODEL_ID), cache_dir=HUGGINGFACE_CACHE_DIR)
+    tokenizer = MplugOwlTokenizer.from_pretrained(MODEL_ID, cache_dir=HUGGINGFACE_CACHE_DIR)
     processor = MplugOwlProcessor(image_processor, tokenizer)
 
     model = MODEL_CLASS.from_pretrained(
@@ -69,7 +69,7 @@ def main():
         for image_id, image in zip(image_ids, images):
             yield {"id": image_id, "image": image}
 
-    dataset = Dataset.from_generator(data_generator) # , cache_dir=HUGGINGFACE_CACHE_DIR.joinpath("datasets"))
+    dataset = Dataset.from_generator(data_generator, cache_dir=HUGGINGFACE_CACHE_DIR.joinpath("datasets"))
 
     batches = batchify(dataset, n=BATCH_SIZE)
     total_batches = len(dataset) // BATCH_SIZE
