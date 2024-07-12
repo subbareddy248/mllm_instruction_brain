@@ -132,7 +132,7 @@ def main():
             sentence = tokenizer.decode(res.sequences.tolist()[0], skip_special_tokens=True)
 
             hidden_states = res.hidden_states
-            hidden_states_np = [layer_hidden_state.cpu().float().numpy() for layer_hidden_state in hidden_states[1]]
+            hidden_states_np = [layer_hidden_state.cpu().float().numpy().reshape((1, 4096)).tolist() for layer_hidden_state in hidden_states[1]]
 
 
             BUFFER.append(
