@@ -23,6 +23,12 @@ MODEL_CLASS = MplugOwlForConditionalGeneration
 
 MODEL_NAME = MODEL_ID.replace("/", "_").replace(" ", "_")
 
+GENERATE_KWARGS = {
+    "do_sample": True,
+    "top_k": 5,
+    "max_length": 512,
+}
+
 
 def to_cpu(value):
     if isinstance(value, torch.Tensor):
@@ -46,17 +52,15 @@ def batchify(iterable, n=1):
 
 
 def main():
-    image_processor = MplugOwlImageProcessor.from_pretrained(MODEL_ID) # , cache_dir=HUGGINGFACE_CACHE_DIR)
-    tokenizer = MplugOwlTokenizer.from_pretrained(MODEL_ID) # , cache_dir=HUGGINGFACE_CACHE_DIR)
+    image_processor = MplugOwlImageProcessor.from_pretrained(MODEL_ID, cache_dir=HUGGINGFACE_CACHE_DIR)
+    tokenizer = MplugOwlTokenizer.from_pretrained(MODEL_ID), cache_dir=HUGGINGFACE_CACHE_DIR)
     processor = MplugOwlProcessor(image_processor, tokenizer)
-
-    model_config = MplugOwlConfig.from_pretrained(MODEL_ID)
-    model_config.text_config.output_hidden_states = True
-    model_config.vision_config.output_hidden_states = True
 
     model = MODEL_CLASS.from_pretrained(
         MODEL_ID,
-        # cache_dir=HUGGINGFACE_CACHE_DIR,
+        cache_dir=HUGGINGFACE_CACHE_DIR,
+        torch_dtype=torch.bfloat16,
+        output_hidden_states=True,
     ).to(GPU_DEVICE)
 
     def data_generator():
@@ -109,41 +113,32 @@ def main():
             text = [PROMPT] * BATCH_SIZE
 
             inputs = processor(images=images, text=text, return_tensors="pt")
-            for k, v in inputs:
-                inputs[k] = v.to(GPU_DEVICE)
+            inputs = {k: v.bfloat16() if v.dtype == torch.float else v for k, v in inputs.items()}
+            inputs = {k: v.to(GPU_DEVICE) for k, v in inputs.items()}
 
-            non_padding_mask = ((inputs.input_ids != tokenizer.pad_token_id)[:, :-1]).to(GPU_DEVICE)
-            non_media_mask = torch.ones_like(non_padding_mask).to(GPU_DEVICE)
-            prompt_mask = torch.zeros_like(non_padding_mask).to(GPU_DEVICE)
-
-            outputs = model(
+            res = model.generate(
                 **inputs,
-                output_hidden_states=True,
-                num_images=torch.tensor([len(images)]),
-                non_padding_mask=non_padding_mask,
-                non_media_mask=non_media_mask,
-                prompt_mask=prompt_mask,
-                labels=inputs.input_ids,
+                **GENERATE_KWARGS,
+                return_dict_in_generate=True,
+                output_hidden_states=True
             )
-            outputs = to_cpu(outputs)
 
             if TEST_RUN:
-                print(f"{outputs.keys() = }")
+                print("Dumping outputs to temp_outputs.pkl")
                 with open("temp_outputs.pkl", "wb") as f:
-                    pickle.dump(outputs, f)
-                exit(0)
+                    pickle.dump(res, f)
+                exit(1)
 
-            vision_outputs = outputs["vision_outputs"]
-            language_outputs = outputs["language_outputs"]
+            sentence = tokenizer.decode(res.sequences.tolist()[0], skip_special_tokens=True)
 
-            vision_hidden_states = tuple(torch.mean(hs, dim=1).numpy() for hs in vision_outputs["hidden_states"])
-            language_hidden_states = tuple(torch.mean(hs, dim=1).numpy() for hs in language_outputs["hidden_states"])
+            hidden_states = res.hidden_states
+            hidden_states_np = [layer_hidden_state.cpu().float().numpy() for layer_hidden_state in hidden_states[1]]
+
 
             BUFFER.append(
                 {
                     "image_ids": batch["id"],
-                    "vision_hidden_states": vision_hidden_states,
-                    "language_hidden_states": language_hidden_states,
+                    "language_hidden_states": hidden_states_np,
                 }
             )
 
@@ -181,6 +176,14 @@ if __name__ == "__main__":
         "--base-dir",
         required=False,
         # default=pathlib.Path("/tmp/akshett.jindal"),
+        type=pathlib.Path,
+        help="The path to the directory where all the models, inputs and the outputs will be cached and loaded from",
+    )
+    parser.add_argument(
+        "-h",
+        "--huggingface-cache-dir",
+        required=False,
+        default=pathlib.Path("./"),
         type=pathlib.Path,
         help="The path to the directory where all the models, inputs and the outputs will be cached and loaded from",
     )
@@ -248,6 +251,7 @@ if __name__ == "__main__":
 
     BATCH_SIZE: int = args.batch_size
     BASE_DIR: pathlib.Path = args.base_dir
+    HUGGINGFACE_CACHE_DIR: pathlib.Path = args.huggingface_cache_dir
     SUBJECT: int = args.subject
     TEST_RUN: bool = args.test_run
     PROMPT_NUMBER: int = args.prompt_number
@@ -271,7 +275,6 @@ if __name__ == "__main__":
         "AI:"
     )
 
-    # HUGGINGFACE_CACHE_DIR = BASE_DIR.joinpath(".huggingface_cache")
     OUTPUT_DIR = BASE_DIR.joinpath("image_embeddings", f"prompt_{args.prompt_number}", MODEL_NAME, f"subject_0{SUBJECT}")
 
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
