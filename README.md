@@ -3,6 +3,7 @@
 ## Downloading the dataset
 
 * The dataset can be found at [this link](https://drive.google.com/drive/folders/1lNlV7EKRidd4H-xWTs0kaIR-bHrAyxkq?usp=sharing)
+* For visualization of brain masks using voxelwise_tutorials, download the data present at [this link](https://drive.google.com/drive/folders/1YXAYggtlsfFxMtiqWs0UrMihxI125MHb)
 * Download the dataset and note down the path to the directory where all the nsd_* dataset directories are present. We will need to put it in the script later on.
 
 ## Conda Environment
