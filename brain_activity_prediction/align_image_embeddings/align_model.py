@@ -49,8 +49,6 @@ def train_model(
             total=num_hidden_layers,
         )
 
-    val_preds_avg = []
-
     for layer_num in hidden_layers_iter:
         trn_hs = zscore(numpy.array([hidden_states[image_id + 1][layer_num] for image_id in trn_images]))
         val_hs = zscore(numpy.array([hidden_states[image_id + 1][layer_num] for image_id in val_images]))
@@ -71,8 +69,6 @@ def train_model(
 
         trn_hs_pred = backend.to_numpy(pipeline.predict(trn_hs))
         val_hs_pred = backend.to_numpy(pipeline.predict(val_hs))
-
-        val_preds_avg.append(val_hs_pred)
 
         trn_pearson_x, trn_pearson_y = trn_hs_pred.transpose(1, 0), trn_voxel_data.transpose(1, 0)
         val_pearson_x, val_pearson_y = val_hs_pred.transpose(1, 0), val_voxel_data.transpose(1, 0)
@@ -100,10 +96,7 @@ def train_model(
             }
         )
 
-    val_preds_avg = numpy.array(val_preds_avg)
-    val_preds_avg = numpy.mean(val_preds_avg, axis=0)
-
-    return pipelines, val_preds_avg
+    return pipelines
 
 
 def get_roi_scores(brain, voxels, scores, roi_masks):
@@ -187,10 +180,10 @@ def main():
 
     TRN_OUTPUT_FILE = OUTPUT_DIR.joinpath("training.pkl")
     VAL_OUTPUT_FILE = OUTPUT_DIR.joinpath("validation.pkl")
-    PREDS_OUTPUT_FILE = OUTPUT_DIR.joinpath("val_predictions.pkl")
+    VAL_PEARSONS_FILE = OUTPUT_DIR.joinpath("validation_pearsons.pkl")
 
     for hs_name in HIDDEN_STATES.keys():
-        pipelines, val_preds_avg = train_model(
+        pipelines = train_model(
             hs_name,
             HIDDEN_STATES[hs_name],
             trn_images,
@@ -232,6 +225,9 @@ def main():
             else:
                 val_pearsons = numpy.concatenate((val_pearsons, [val_pearson]), axis=0)
 
+        with open(VAL_PEARSONS_FILE, "wb") as f:
+            pickle.dump(val_pearsons, f)
+
         trn_scores = numpy.nanmean(trn_scores, axis=0)
         val_scores = numpy.nanmean(val_scores, axis=0)
 
@@ -257,8 +253,6 @@ def main():
         pickle.dump(TRN_SCORES, f)
     with open(VAL_OUTPUT_FILE, "wb") as f:
         pickle.dump(VAL_SCORES, f)
-    with open(PREDS_OUTPUT_FILE, "wb") as f:
-        pickle.dump(val_preds_avg, f)
 
 
 if __name__ == "__main__":
