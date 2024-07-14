@@ -131,7 +131,7 @@ def main():
             batches = pickle.load(f)
 
         for batch in batches:
-            keys = set([k for k in batch.keys() if k != "image_ids"])
+            keys = set([k for k in batch.keys() if k not in ["image_ids", "generated_sentence"]])
 
             for image_num, image_id in enumerate(batch["image_ids"]):
                 for key in keys:

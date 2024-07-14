@@ -129,16 +129,24 @@ def main():
                     pickle.dump(res, f)
                 exit(1)
 
-            sentence = tokenizer.decode(res.sequences.tolist()[0], skip_special_tokens=True)
+            generated_sentence = tokenizer.decode(res.sequences.tolist()[0], skip_special_tokens=True)
 
             hidden_states = res.hidden_states
-            hidden_states_np = [layer_hidden_state.cpu().float().numpy().reshape((1, 4096)).tolist() for layer_hidden_state in hidden_states[1]]
+            hidden_states_to_save = np.array([
+                [
+                    lhs.cpu().float().numpy()
+                    for lhs in hidden_states[token_num]
+                ]
+                for token_num in np.arange(1, len(hidden_states))
+            ])
+            hidden_states_to_save = np.average(hidden_states_to_save[:,:,0,0,:], axis=0)
 
 
             BUFFER.append(
                 {
                     "image_ids": batch["id"],
-                    "language_hidden_states": hidden_states_np,
+                    "generated_sentence": generated_sentence,
+                    "language_hidden_states": hidden_states_to_save,
                 }
             )
 
@@ -180,7 +188,7 @@ if __name__ == "__main__":
         help="The path to the directory where all the models, inputs and the outputs will be cached and loaded from",
     )
     parser.add_argument(
-        "-h",
+        "-z",
         "--huggingface-cache-dir",
         required=False,
         default=pathlib.Path("./"),
